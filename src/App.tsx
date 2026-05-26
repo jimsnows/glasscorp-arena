@@ -1,6 +1,111 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 
+// ── SUPABASE CLIENT ──
+const SUPA_URL = "https://febslpxjssjijooiukot.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlYnNscHhqc3NqaWpvb2l1a290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDg4MzgsImV4cCI6MjA5NTM4NDgzOH0.7dT4kRulXXmkoUkOHls0P7Eq4jna8hZlkEayW-O7PUY";
+const SUPA_HEADERS = { "Content-Type":"application/json", "apikey":SUPA_KEY, "Authorization":"Bearer "+SUPA_KEY };
+
+async function sbGet(table, query=""){
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${query}`, { headers:SUPA_HEADERS });
+  if(!res.ok) return [];
+  return res.json();
+}
+async function sbInsert(table, data){
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    method:"POST", headers:{...SUPA_HEADERS, "Prefer":"return=representation"},
+    body:JSON.stringify(data)
+  });
+  if(!res.ok){ console.error("sbInsert error", await res.text()); return null; }
+  const rows = await res.json();
+  return Array.isArray(rows) ? rows[0] : rows;
+}
+async function sbUpdate(table, match, data){
+  const params = Object.entries(match).map(([k,v])=>`${k}=eq.${v}`).join("&");
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
+    method:"PATCH", headers:{...SUPA_HEADERS, "Prefer":"return=representation"},
+    body:JSON.stringify(data)
+  });
+  if(!res.ok){ console.error("sbUpdate error", await res.text()); return null; }
+  return res.json();
+}
+async function sbDelete(table, match){
+  const params = Object.entries(match).map(([k,v])=>`${k}=eq.${v}`).join("&");
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
+    method:"DELETE", headers:SUPA_HEADERS
+  });
+  return res.ok;
+}
+async function sbUploadImage(file, bucket="strain-media"){
+  const ext = file.name.split(".").pop() || "jpg";
+  const filename = `strain_${Date.now()}.${ext}`;
+  const res = await fetch(`${SUPA_URL}/storage/v1/object/${bucket}/${filename}`, {
+    method:"POST",
+    headers:{ "apikey":SUPA_KEY, "Authorization":"Bearer "+SUPA_KEY, "Content-Type":file.type, "x-upsert":"true" },
+    body: file
+  });
+  if(!res.ok){ console.error("Upload error", await res.text()); return null; }
+  return `${SUPA_URL}/storage/v1/object/public/${bucket}/${filename}`;
+}
+
+function dbToStrain(row){
+  return {
+    id: row.id,
+    name: row.name||"",
+    type: row.type||"Hybrid",
+    sativaRatio: row.sativa_ratio||50,
+    thc: row.thc||0,
+    cbd: row.cbd||0,
+    effects: row.effects||[],
+    desc: row.description||"",
+    gmcCost: row.gmc_cost||0,
+    stock: row.stock||0,
+    tier: row.tier||"TOP",
+    tag: row.tag||"",
+    media: row.image_url||"",
+    media2: row.image_url2||"",
+    media3: row.image_url3||"",
+    promo: row.promo||{active:false,label:"",discount:0},
+    active: row.active!==false,
+  };
+}
+function strainToDb(s){
+  return {
+    name: s.name,
+    type: s.type,
+    sativa_ratio: s.sativaRatio,
+    thc: s.thc,
+    cbd: s.cbd,
+    effects: s.effects,
+    description: s.desc,
+    gmc_cost: s.gmcCost,
+    stock: s.stock,
+    tier: s.tier,
+    tag: s.tag||"",
+    image_url: s.media||"",
+    image_url2: s.media2||"",
+    image_url3: s.media3||"",
+    promo: s.promo||{active:false,label:"",discount:0},
+    active: true,
+  };
+}
+function dbToMember(row){
+  return {
+    id: row.id,
+    name: row.name||"",
+    phone: row.phone||"",
+    lineId: row.line_id||"",
+    gmcBalance: row.gmc_balance||0,
+    totalSpent: row.total_spent||0,
+    claimHistory: row.claim_history||[],
+    deliveryAddress: row.delivery_address||"",
+    mapsLink: row.maps_link||"",
+    riderPhone: row.rider_phone||"",
+    countryCode: row.country_code||"+66",
+    joinedAt: row.joined_at||new Date().toISOString(),
+  };
+}
+
 // ── THEMES — dramatically different ──
 const T = {
   base: {
@@ -2749,13 +2854,15 @@ function StrainEditor({strain,onSave,onCancel,isNew}){
 
               {/* Hidden file input */}
               <input id="mediaFileInput" type="file" accept="image/*,.gif" style={{display:"none"}}
-                onChange={e=>{
+                onChange={async e=>{
                   const file=e.target.files?.[0];
                   if(!file) return;
-                  if(file.size>15*1024*1024){alert("File too large. Max 15MB.");return;}
-                  const reader=new FileReader();
-                  reader.onload=ev=>F("media",ev.target?.result as string||"");
-                  reader.readAsDataURL(file);
+                  if(file.size>20*1024*1024){alert("File too large. Max 20MB.");return;}
+                  F("mediaUploading",true);
+                  const url=await sbUploadImage(file);
+                  F("mediaUploading",false);
+                  if(url) F("media",url);
+                  else alert("Upload failed. Check your connection.");
                   e.target.value="";
                 }}/>
 
@@ -2767,9 +2874,14 @@ function StrainEditor({strain,onSave,onCancel,isNew}){
                 {form.media&&<button onClick={()=>F("media","")} style={{padding:"9px 12px",background:"rgba(232,80,32,0.1)",border:"1px solid rgba(232,80,32,0.3)",color:"#e85020",cursor:"pointer",fontSize:9,letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>Clear</button>}
               </div>
 
-              {form.media&&form.media.startsWith("data:")&&(
-                <div style={{fontSize:9,color:th.dim,marginTop:5,letterSpacing:1}}>
-                  📎 File loaded · {Math.round(form.media.length*0.75/1024)}KB · Session only until Supabase connected
+              {form.mediaUploading&&(
+                <div style={{fontSize:9,color:th.a1,marginTop:5,letterSpacing:1,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Uploading to Supabase...
+                </div>
+              )}
+              {form.media&&form.media.startsWith("https://febslpxjssjijooiukot")&&(
+                <div style={{fontSize:9,color:"#00ff88",marginTop:5,letterSpacing:1}}>
+                  ✓ Saved to Supabase Storage — visible everywhere
                 </div>
               )}
               {/* Photo 2 + 3 */}
@@ -2782,13 +2894,12 @@ function StrainEditor({strain,onSave,onCancel,isNew}){
                       {form[key]?<img src={form[key]} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:16,opacity:0.3}}>+</span>}
                     </div>
                     <input id={"mediaInput_"+key} type="file" accept="image/*,.gif" style={{display:"none"}}
-                      onChange={e=>{
+                      onChange={async e=>{
                         const file=e.target.files?.[0];
                         if(!file) return;
-                        if(file.size>15*1024*1024){return;}
-                        const reader=new FileReader();
-                        reader.onload=ev=>F(key,ev.target?.result||"");
-                        reader.readAsDataURL(file);
+                        if(file.size>20*1024*1024){return;}
+                        const url=await sbUploadImage(file);
+                        if(url) F(key,url);
                         e.target.value="";
                       }}/>
                     <input placeholder="Or paste URL..." value={form[key]&&form[key].startsWith("http")?form[key]:""} onChange={e=>F(key,e.target.value)}
@@ -2845,27 +2956,40 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
 
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(""),2500);}
 
-  function saveStrain(form){
+  async function saveStrain(form){
     if(editing==="new"){
-      const newS={...form,id:Date.now()};
-      setStrains(ss=>[...ss,newS]);
-      showToast(`✓ "${form.name}" added to The Shelf`);
+      const dbRow=strainToDb(form);
+      const saved=await sbInsert("strains",dbRow);
+      if(saved){
+        const newS=dbToStrain(saved);
+        setStrains(ss=>[...ss,newS]);
+        showToast(`✓ "${form.name}" added to The Vault`);
+      } else {
+        showToast(`⚠ Save failed — check connection`);
+      }
     } else {
+      const dbRow=strainToDb(form);
+      await sbUpdate("strains",{id:form.id},dbRow);
       setStrains(ss=>ss.map(s=>s.id===form.id?form:s));
       showToast(`✓ "${form.name}" updated`);
     }
     setEditing(null);
   }
 
-  function deleteStrain(id){
+  async function deleteStrain(id){
     const s=strains.find(x=>x.id===id);
+    await sbDelete("strains",{id});
     setStrains(ss=>ss.filter(x=>x.id!==id));
     setDeleteConfirm(null);
     showToast(`🗑 "${s?.name}" removed from shelf`);
   }
 
-  function adjustStock(id,delta){
-    setStrains(ss=>ss.map(s=>s.id===id?{...s,stock:Math.max(0,s.stock+delta)}:s));
+  async function adjustStock(id,delta){
+    const s=strains.find(x=>x.id===id);
+    if(!s) return;
+    const newStock=Math.max(0,s.stock+delta);
+    setStrains(ss=>ss.map(x=>x.id===id?{...x,stock:newStock}:x));
+    await sbUpdate("strains",{id},{stock:newStock});
   }
 
   function doAddGMC(){
@@ -4776,6 +4900,7 @@ export default function App(){
   const [pinInput,setPinInput]=useState("");
   const [pinError,setPinError]=useState(false);
   const [liveStrains,setLiveStrains]=useState(STRAINS);
+  const [strainsLoaded,setStrainsLoaded]=useState(false);
   const [contactSettings,setContactSettings]=useState(()=>loadContactSettings());
   const [orders,setOrders]=useState(()=>loadOrders());
   const [staffSettings,setStaffSettings]=useState(()=>loadStaffSettings());
@@ -4800,13 +4925,61 @@ export default function App(){
   });
   const th=T.base;
 
-  // sync members to localStorage whenever they change
+  // ── LOAD FROM SUPABASE ON STARTUP ──
+  useEffect(()=>{
+    // Load strains
+    sbGet("strains","active=eq.true&order=id.asc").then(rows=>{
+      if(rows&&rows.length>0){
+        setLiveStrains(rows.map(dbToStrain));
+        const ids=rows.slice(0,3).map(r=>r.id);
+        setFeaturedIds(f=>f.length>0?f:ids);
+        setStrainsLoaded(true);
+      } else {
+        // Seed default strains into Supabase on first run
+        Promise.all(STRAINS.map(s=>sbInsert("strains",strainToDb(s)))).then(saved=>{
+          const valid=saved.filter(Boolean).map(dbToStrain);
+          if(valid.length>0) setLiveStrains(valid);
+          setStrainsLoaded(true);
+        }).catch(()=>setStrainsLoaded(true));
+      }
+    }).catch(()=>setStrainsLoaded(true));
+
+    // Load members
+    sbGet("members","order=joined_at.desc").then(rows=>{
+      if(rows&&rows.length>0) setMembers(rows.map(dbToMember));
+    }).catch(()=>{});
+
+    // Load orders
+    sbGet("orders","order=created_at.desc&limit=500").then(rows=>{
+      if(rows&&rows.length>0){
+        setOrders(rows.map(r=>({
+          id:r.id, memberId:r.member_id, memberName:r.member_name,
+          memberContact:r.member_contact, items:r.items||[],
+          totalGMC:r.total_gmc, paidWith:r.paid_with,
+          deliveryAddress:r.delivery_address, mapsLink:r.maps_link,
+          riderPhone:r.rider_phone, countryCode:r.country_code,
+          deliveryTime:r.delivery_time, status:r.status||"new",
+          statusHistory:r.status_history||[], createdAt:r.created_at,
+          updatedAt:r.updated_at,
+        })));
+      }
+    }).catch(()=>{});
+
+    // Load transactions
+    sbGet("transactions","order=at.desc&limit=500").then(rows=>{
+      if(rows&&rows.length>0){
+        setTransactions(rows.map(r=>({id:r.id,memberId:r.member_id,note:r.note,amount:r.amount,at:r.at})));
+      }
+    }).catch(()=>{});
+  },[]);
+
+  // sync to localStorage as backup
   useEffect(()=>{ saveRegistry(members); },[members]);
   useEffect(()=>{ saveFeatured(featuredIds); },[featuredIds]);
   useEffect(()=>{ saveOrders(orders); },[orders]);
   useEffect(()=>{ saveTx(transactions); },[transactions]);
 
-  function registerMember(u){
+  async function registerMember(u){
     const newMember={...u,id:Date.now(),joinedAt:new Date().toISOString(),gmcBalance:0,totalSpent:0,claimHistory:[]};
     setMembers(ms=>{
       const exists=ms.find(m=>m.name===u.name&&(m.phone===u.phone||m.lineId===u.lineId));
@@ -4816,6 +4989,13 @@ export default function App(){
       }
       const updated=[...ms,newMember];
       setUser(newMember);
+      // Save to Supabase
+      sbInsert("members",{
+        id:newMember.id, name:newMember.name, phone:newMember.phone||"",
+        line_id:newMember.lineId||"", gmc_balance:0, total_spent:0,
+        claim_history:[], country_code:newMember.countryCode||"+66",
+        joined_at:newMember.joinedAt
+      }).catch(()=>{});
       return updated;
     });
   }
@@ -4823,15 +5003,20 @@ export default function App(){
   function updateMemberBalance(memberId,gmcDelta,txNote){
     setMembers(ms=>ms.map(m=>{
       if(m.id!==memberId) return m;
-      return {...m,gmcBalance:Math.max(0,(m.gmcBalance||0)+gmcDelta),totalSpent:gmcDelta<0?(m.totalSpent||0)+Math.abs(gmcDelta):m.totalSpent};
+      const newBal=Math.max(0,(m.gmcBalance||0)+gmcDelta);
+      const newSpent=gmcDelta<0?(m.totalSpent||0)+Math.abs(gmcDelta):m.totalSpent;
+      // Sync to Supabase
+      sbUpdate("members",{id:memberId},{gmc_balance:newBal,total_spent:newSpent}).catch(()=>{});
+      return {...m,gmcBalance:newBal,totalSpent:newSpent};
     }));
-    // also update active session user if it's the same person
     setUser(u=>{
       if(!u||u.id!==memberId) return u;
       return {...u,gmcBalance:Math.max(0,(u.gmcBalance||0)+gmcDelta),totalSpent:gmcDelta<0?(u.totalSpent||0)+Math.abs(gmcDelta):u.totalSpent};
     });
     const tx={id:Date.now(),memberId,note:txNote,amount:gmcDelta,at:new Date().toISOString()};
     setTransactions(txs=>[tx,...txs].slice(0,500));
+    // Save transaction to Supabase
+    sbInsert("transactions",{id:tx.id,member_id:memberId,note:txNote,amount:gmcDelta,at:tx.at}).catch(()=>{});
   }
 
   // ── DISCOUNT CALC ── per strain, per qty
@@ -4915,6 +5100,17 @@ export default function App(){
     };
     setOrders(os=>[order,...os]);
     sendTelegramOrder(order,staffSettings);
+    // Save order to Supabase
+    sbInsert("orders",{
+      id:order.id, member_id:order.memberId, member_name:order.memberName,
+      member_contact:order.memberContact, items:order.items,
+      total_gmc:order.totalGMC, paid_with:order.paidWith,
+      delivery_address:order.deliveryAddress, maps_link:order.mapsLink,
+      rider_phone:order.riderPhone, country_code:order.countryCode,
+      delivery_time:order.deliveryTime, status:order.status,
+      status_history:order.statusHistory,
+      created_at:order.createdAt, updated_at:order.updatedAt
+    }).catch(()=>{});
     clearCart();
     setConfirmModal(null);
     setClaimDone(true);
@@ -4976,6 +5172,17 @@ export default function App(){
     };
     setOrders(os=>[order,...os]);
     sendTelegramOrder(order,staffSettings);
+    // Save order to Supabase
+    sbInsert("orders",{
+      id:order.id, member_id:order.memberId, member_name:order.memberName,
+      member_contact:order.memberContact, items:order.items,
+      total_gmc:order.totalGMC, paid_with:order.paidWith,
+      delivery_address:order.deliveryAddress, maps_link:order.mapsLink,
+      rider_phone:order.riderPhone, country_code:order.countryCode,
+      delivery_time:order.deliveryTime, status:order.status,
+      status_history:order.statusHistory,
+      created_at:order.createdAt, updated_at:order.updatedAt
+    }).catch(()=>{});
     setConfirmModal(null);
     setClaimDone(true);
     setTimeout(()=>{setClaimDone(false);setStrain(null);setTab("shelf");},3000);
@@ -4996,7 +5203,10 @@ export default function App(){
     setOrders(os=>os.map(o=>{
       if(o.id!==orderId) return o;
       const history=[...(o.statusHistory||[]),{status:newStatus,at:new Date().toISOString(),note:`Status updated to ${newStatus.replace("_"," ")}`}];
-      return{...o,status:newStatus,statusHistory:history,updatedAt:new Date().toISOString()};
+      const updated={...o,status:newStatus,statusHistory:history,updatedAt:new Date().toISOString()};
+      // Sync to Supabase
+      sbUpdate("orders",{id:orderId},{status:newStatus,status_history:history,updated_at:updated.updatedAt}).catch(()=>{});
+      return updated;
     }));
   }
 
@@ -5147,7 +5357,17 @@ export default function App(){
         {tab==="home"&&!strain&&!advisorStrain&&<HomePage t={t} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} strains={liveStrains} featuredIds={featuredIds} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {tab==="shelf"&&!strain&&!advisorStrain&&<TheShelf t={t} user={user} strains={liveStrains} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {(strain||advisorStrain)&&<StrainDetail strain={strain||advisorStrain} t={t} user={user} onBack={()=>{setStrain(null);setAdvisorStrain(null);setTab("shelf");window.scrollTo(0,0);}} onClaim={handleClaim} onLogin={()=>{setStrain(null);setAdvisorStrain(null);setTab("profile");window.scrollTo(0,0);}} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onAddToCart={addToCart} cart={cart}/>}
-        {tab==="profile"&&!strain&&!advisorStrain&&<ProfilePage t={t} user={user} onLogin={registerMember} onSkip={()=>setTab("home")} onLogout={()=>{setUser(null);setTab("home");}} onShowPin={()=>setShowPin(true)} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} onUpdateProfile={(updated)=>{setUser(updated);setMembers(ms=>ms.map(m=>m.id===updated.id?updated:m));}} transactions={transactions} onAddToCart={addToCart} strains={liveStrains} onOpenCart={()=>setCartOpen(true)} orders={orders}/>}
+        {tab==="profile"&&!strain&&!advisorStrain&&<ProfilePage t={t} user={user} onLogin={registerMember} onSkip={()=>setTab("home")} onLogout={()=>{setUser(null);setTab("home");}} onShowPin={()=>setShowPin(true)} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} onUpdateProfile={(updated)=>{
+  setUser(updated);
+  setMembers(ms=>ms.map(m=>m.id===updated.id?updated:m));
+  // Sync delivery info to Supabase
+  sbUpdate("members",{id:updated.id},{
+    delivery_address:updated.deliveryAddress||"",
+    maps_link:updated.mapsLink||"",
+    rider_phone:updated.riderPhone||"",
+    country_code:updated.countryCode||"+66"
+  }).catch(()=>{});
+}} transactions={transactions} onAddToCart={addToCart} strains={liveStrains} onOpenCart={()=>setCartOpen(true)} orders={orders}/>}
         {tab==="admin"&&!strain&&!advisorStrain&&<AdminPanel t={t} user={user} strains={liveStrains} setStrains={setLiveStrains} members={members} transactions={transactions} onUpdateBalance={updateMemberBalance} discountSettings={discountSettings} setDiscountSettings={setDiscountSettings} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} onExit={()=>setTab("home")} onAddGMC={(amt)=>{ if(user) updateMemberBalance(user.id,amt,"Manual GMC top-up"); }} contactSettings={contactSettings} onSaveContact={(s)=>{setContactSettings(s);saveContactSettings(s);}} staffSettings={staffSettings} onSaveStaff={(s)=>{setStaffSettings(s);saveStaffSettings(s);}} orders={orders} onUpdateOrderStatus={updateOrderStatus} staffMode={staffMode}/>}
       </div>
 
