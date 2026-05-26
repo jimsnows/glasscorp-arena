@@ -5142,7 +5142,8 @@ export default function App(){
         </div>
       </nav>
 
-      <div style={{paddingTop:62}}>
+      <div style={{paddingTop:62,paddingBottom:"calc(72px + env(safe-area-inset-bottom,0px))"}}>
+
         {tab==="home"&&!strain&&!advisorStrain&&<HomePage t={t} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} strains={liveStrains} featuredIds={featuredIds} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {tab==="shelf"&&!strain&&!advisorStrain&&<TheShelf t={t} user={user} strains={liveStrains} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {(strain||advisorStrain)&&<StrainDetail strain={strain||advisorStrain} t={t} user={user} onBack={()=>{setStrain(null);setAdvisorStrain(null);setTab("shelf");window.scrollTo(0,0);}} onClaim={handleClaim} onLogin={()=>{setStrain(null);setAdvisorStrain(null);setTab("profile");window.scrollTo(0,0);}} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onAddToCart={addToCart} cart={cart}/>}
@@ -5151,14 +5152,18 @@ export default function App(){
       </div>
 
       {/* BOTTOM NAV */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:`${th.bgDeep}f8`,backdropFilter:"blur(20px)",borderTop:`1px solid ${th.border}`,display:"flex",zIndex:100,boxShadow:`0 -4px 30px ${th.a2}08`}}>
-        {[["home","⬡","Home"],["shelf","◈",t.shelf],["profile","◉",t.profile]].map(([k,ic,l])=>(
-          <button key={k} onClick={()=>{setTab(k);setStrain(null);window.scrollTo(0,0);}} style={{flex:1,padding:"11px 4px 9px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
-            <span style={{fontSize:16,color:tab===k?th.a1:th.dim,textShadow:tab===k?`0 0 10px ${th.a1}`:"none",transition:"all 0.2s"}}>{ic}</span>
-            <span style={{fontSize:8,fontWeight:700,color:tab===k?th.a1:th.dim,letterSpacing:1,textTransform:"uppercase",textShadow:tab===k?`0 0 8px ${th.a1}`:"none",transition:"all 0.2s"}}>{l}</span>
-            {tab===k&&<div style={{position:"absolute",bottom:0,left:"20%",right:"20%",height:2,background:th.a1,boxShadow:`0 0 8px ${th.a1}`}}/>}
-          </button>
-        ))}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:`${th.bgDeep}f8`,backdropFilter:"blur(20px)",borderTop:`1px solid ${th.border}`,display:"flex",flexDirection:"column",zIndex:100,boxShadow:`0 -4px 30px ${th.a2}08`}}>
+        <div style={{display:"flex",width:"100%"}}>
+          {[["home","⬡","Home"],["shelf","◈",t.shelf],["profile","◉",t.profile]].map(([k,ic,l])=>(
+            <button key={k} onClick={()=>{setTab(k);setStrain(null);window.scrollTo(0,0);}} style={{flex:1,padding:"11px 4px 9px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
+              <span style={{fontSize:16,color:tab===k?th.a1:th.dim,textShadow:tab===k?`0 0 10px ${th.a1}`:"none",transition:"all 0.2s"}}>{ic}</span>
+              <span style={{fontSize:8,fontWeight:700,color:tab===k?th.a1:th.dim,letterSpacing:1,textTransform:"uppercase",textShadow:tab===k?`0 0 8px ${th.a1}`:"none",transition:"all 0.2s"}}>{l}</span>
+              {tab===k&&<div style={{position:"absolute",bottom:0,left:"20%",right:"20%",height:2,background:th.a1,boxShadow:`0 0 8px ${th.a1}`}}/>}
+            </button>
+          ))}
+        </div>
+        {/* iPhone home bar safe area */}
+        <div style={{height:"env(safe-area-inset-bottom,0px)",background:"transparent"}}/>
       </div>
 
       {/* FLOATING CONTACT + WIZARD */}
