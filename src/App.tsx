@@ -2970,7 +2970,10 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
     } else {
       const dbRow=strainToDb(form);
       await sbUpdate("strains",{id:form.id},dbRow);
-      setStrains(ss=>ss.map(s=>s.id===form.id?form:s));
+      // Re-fetch from Supabase so image_url → media mapping is correct everywhere
+      const rows=await sbGet("strains",`id=eq.${form.id}`);
+      const updated=rows&&rows.length>0?dbToStrain(rows[0]):form;
+      setStrains(ss=>ss.map(s=>s.id===form.id?updated:s));
       showToast(`✓ "${form.name}" updated`);
     }
     setEditing(null);
