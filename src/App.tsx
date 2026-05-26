@@ -5166,9 +5166,9 @@ export default function App(){
           });
         } else if(urlToken){
           // New Google user — need personame
-          // Store google user data for personame picker
-          // This is handled in ProfilePage via authGoogleUser state
+          // Store google user data and force profile tab to show personame picker
           localStorage.setItem("glasscorp_google_pending", JSON.stringify(session.user));
+          setTab("profile");
         }
       }).catch(()=>{});
     }
