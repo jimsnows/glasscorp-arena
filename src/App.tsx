@@ -83,9 +83,6 @@ function strainToDb(s){
     tier: s.tier,
     tag: s.tag||"",
     image_url: s.media||"",
-    image_url2: s.media2||"",
-    image_url3: s.media3||"",
-    promo: s.promo||{active:false,label:"",discount:0},
     active: true,
   };
 }
