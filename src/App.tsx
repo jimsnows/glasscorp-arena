@@ -105,9 +105,11 @@ async function sbCreateMember(authId, email, personame, avatarUrl=""){
   const id = Date.now();
   const row = {
     id, auth_id:authId, email, personame,
-    name:personame, avatar_url:avatarUrl,
+    name:personame, avatar_url:avatarUrl||"",
+    phone:"", line_id:"",
     gmc_balance:0, total_spent:0,
-    claim_history:[], auth_provider:"email",
+    claim_history:JSON.stringify([]),
+    auth_provider: email&&!email.endsWith("@glasscorp.gg")?"email":"personame",
     joined_at:new Date().toISOString()
   };
   return sbInsert("members", row);
@@ -123,6 +125,7 @@ function sbGetTokenFromUrl(){
   const token = params.get("access_token");
   if(token){
     localStorage.setItem("glasscorp_session", token);
+    localStorage.setItem("glasscorp_age_ok","1"); // auto-pass age gate for Google users
     window.history.replaceState(null,"",window.location.pathname);
   }
   return token;
@@ -1546,6 +1549,19 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
   const [authError,setAuthError]=useState("");
   const [authSuccess,setAuthSuccess]=useState("");
   const [authGoogleUser,setAuthGoogleUser]=useState(null); // temp hold google user while picking personame
+  const [personameStatus,setPersonameStatus]=useState(""); // "" | "checking" | "available" | "taken"
+  const personameTimer=useRef(null);
+
+  function checkPersoname(val){
+    setPersonameStatus("");
+    if(personameTimer.current) clearTimeout(personameTimer.current);
+    if(!val||val.trim().length<2){ setPersonameStatus(""); return; }
+    setPersonameStatus("checking");
+    personameTimer.current=setTimeout(async()=>{
+      const unique=await sbCheckPersonameUnique(val.trim());
+      setPersonameStatus(unique?"available":"taken");
+    },600);
+  }
 
   async function handleLogin(){
     if(!authPersoname.trim()||!authPassword.trim()) return;
@@ -1722,14 +1738,18 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
           {/* ── SIGNUP SCREEN ── */}
           {authScreen==="signup"&&(<>
             <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
-            <input className="gc-input" type="text" placeholder="Pick a unique PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} autoFocus style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <input className="gc-input" type="text" placeholder="Pick a unique PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");checkPersoname(e.target.value);}} autoFocus style={{...inputStyle,marginBottom:4,borderColor:personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}} onFocus={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.a2} onBlur={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}/>
+            {personameStatus==="checking"&&<div style={{fontSize:9,color:th.dim,marginBottom:10,letterSpacing:1}}>⟳ Checking availability...</div>}
+            {personameStatus==="available"&&<div style={{fontSize:9,color:"#00ff88",marginBottom:10,letterSpacing:1}}>✓ Available</div>}
+            {personameStatus==="taken"&&<div style={{fontSize:9,color:"#e85020",marginBottom:10,letterSpacing:1}}>✗ Already taken — choose another</div>}
+            {personameStatus===""&&<div style={{marginBottom:10}}/>}
             <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Email <span style={{color:th.dim,fontWeight:400,letterSpacing:1,textTransform:"none",fontSize:9}}>(for recovery + Google login)</span></div>
             <input className="gc-input" type="email" placeholder="your@email.com" value={authEmail} onChange={e=>{setAuthEmail(e.target.value);setAuthError("");}} style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
             <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Password</div>
             <input className="gc-input" type="password" placeholder="Min 6 characters" value={authPassword} onChange={e=>{setAuthPassword(e.target.value);setAuthError("");}} style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
             <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Confirm Password</div>
             <input className="gc-input" type="password" placeholder="Repeat password" value={authConfirm} onChange={e=>{setAuthConfirm(e.target.value);setAuthError("");}} style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <button className="gc-btn" onClick={handleSignup} disabled={authLoading||!authEmail||!authPassword||!authPersoname||!authConfirm} style={{width:"100%",padding:"15px",background:th.a2,border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:10,opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
+            <button className="gc-btn" onClick={handleSignup} disabled={authLoading||!authEmail||!authPassword||!authPersoname||!authConfirm||personameStatus==="taken"||personameStatus==="checking"} style={{width:"100%",padding:"15px",background:th.a2,border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:10,opacity:authLoading||personameStatus==="taken"||personameStatus==="checking"?0.4:1,transition:"opacity 0.2s"}}>
               {authLoading?"CREATING...":"◆ Join The Arena"}
             </button>
             {/* Google */}
@@ -1757,10 +1777,14 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
 
           {/* ── PERSONAME PICKER (Google new users) ── */}
           {authScreen==="personame"&&(<>
-            <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>Welcome! You're signing in with Google for the first time. Choose a unique codename for The Arena.</div>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame (Codename)</div>
-            <input className="gc-input" type="text" placeholder="Your unique codename..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handlePersonameSubmit()} autoFocus style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.a1} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <button className="gc-btn" onClick={handlePersonameSubmit} disabled={authLoading||!authPersoname.trim()} style={{width:"100%",padding:"15px",background:th.a1,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
+            <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>Welcome! You're signing in with Google for the first time. Choose a unique PERSONA name for The Arena.</div>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
+            <input className="gc-input" type="text" placeholder="Pick a unique PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");checkPersoname(e.target.value);}} onKeyDown={e=>e.key==="Enter"&&handlePersonameSubmit()} autoFocus style={{...inputStyle,marginBottom:4,borderColor:personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}} onFocus={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.a1} onBlur={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}/>
+            {personameStatus==="checking"&&<div style={{fontSize:9,color:th.dim,marginBottom:12,letterSpacing:1}}>⟳ Checking availability...</div>}
+            {personameStatus==="available"&&<div style={{fontSize:9,color:"#00ff88",marginBottom:12,letterSpacing:1}}>✓ Available</div>}
+            {personameStatus==="taken"&&<div style={{fontSize:9,color:"#e85020",marginBottom:12,letterSpacing:1}}>✗ Already taken — choose another</div>}
+            {personameStatus===""&&<div style={{marginBottom:12}}/>}
+            <button className="gc-btn" onClick={handlePersonameSubmit} disabled={authLoading||!authPersoname.trim()||personameStatus==="taken"||personameStatus==="checking"} style={{width:"100%",padding:"15px",background:th.a1,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:authLoading||personameStatus==="taken"||personameStatus==="checking"?0.4:1,transition:"opacity 0.2s"}}>
               {authLoading?"SAVING...":"◆ Confirm Codename"}
             </button>
           </>)}
@@ -5088,7 +5112,7 @@ function genOrderId(){return"GC-"+Date.now().toString(36).toUpperCase();}
 export default function App(){
   const [lang,setLang]=useState("en");
   const t=L[lang];
-  const [ageOk,setAgeOk]=useState(false);
+  const [ageOk,setAgeOk]=useState(()=>localStorage.getItem("glasscorp_age_ok")==="1");
   const [user,setUser]=useState(null);
   const [tab,setTab]=useState("home");
   const [strain,setStrain]=useState(null);
@@ -5438,7 +5462,7 @@ export default function App(){
             <div style={{fontSize:44,marginBottom:12}}>⚠️</div>
             <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:900,color:th.text,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Adults Only</div>
             <p style={{fontSize:13,color:th.dim,lineHeight:1.7,marginBottom:28}}>You must be <strong style={{color:th.amber}}>21 years or older</strong> to access this platform.</p>
-            <GBtn onClick={()=>setAgeOk(true)} color={th.a1} style={{width:"100%"}}>✓ I am 21+ — Enter The Vault</GBtn>
+            <GBtn onClick={()=>{setAgeOk(true);localStorage.setItem("glasscorp_age_ok","1");}} color={th.a1} style={{width:"100%"}}>✓ I am 21+ — Enter The Vault</GBtn>
             <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginTop:14}}>🇹🇭 Legal Platform · Members Only</div>
           </div>
         </div>
