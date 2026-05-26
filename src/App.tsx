@@ -48,6 +48,86 @@ async function sbUploadImage(file, bucket="strain-media"){
   return `${SUPA_URL}/storage/v1/object/public/${bucket}/${filename}`;
 }
 
+// ── SUPABASE AUTH FUNCTIONS ──
+async function sbSignUp(email, password){
+  const res = await fetch(`${SUPA_URL}/auth/v1/signup`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
+    body:JSON.stringify({email,password})
+  });
+  const data = await res.json();
+  if(!res.ok) return {error:data.error_description||data.msg||"Signup failed"};
+  return {data};
+}
+async function sbSignIn(email, password){
+  const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
+    body:JSON.stringify({email,password})
+  });
+  const data = await res.json();
+  if(!res.ok) return {error:data.error_description||data.msg||"Login failed"};
+  return {data};
+}
+async function sbSignOut(token){
+  await fetch(`${SUPA_URL}/auth/v1/logout`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPA_KEY,"Authorization":"Bearer "+token}
+  });
+}
+async function sbForgotPassword(email){
+  const res = await fetch(`${SUPA_URL}/auth/v1/recover`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
+    body:JSON.stringify({email})
+  });
+  return res.ok;
+}
+async function sbGetSession(){
+  const token = localStorage.getItem("glasscorp_session");
+  if(!token) return null;
+  const res = await fetch(`${SUPA_URL}/auth/v1/user`, {
+    headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+token}
+  });
+  if(!res.ok){ localStorage.removeItem("glasscorp_session"); return null; }
+  const data = await res.json();
+  return {user:data, token};
+}
+async function sbGetMemberByAuthId(authId){
+  const rows = await sbGet("members", `auth_id=eq.${authId}`);
+  return rows&&rows.length>0 ? dbToMember(rows[0]) : null;
+}
+async function sbCheckPersonameUnique(personame){
+  const rows = await sbGet("members", `personame=eq.${encodeURIComponent(personame)}&select=id`);
+  return !rows||rows.length===0;
+}
+async function sbCreateMember(authId, email, personame, avatarUrl=""){
+  const id = Date.now();
+  const row = {
+    id, auth_id:authId, email, personame,
+    name:personame, avatar_url:avatarUrl,
+    gmc_balance:0, total_spent:0,
+    claim_history:[], auth_provider:"email",
+    joined_at:new Date().toISOString()
+  };
+  return sbInsert("members", row);
+}
+function sbSignInWithGoogle(){
+  const redirectTo = encodeURIComponent(window.location.origin);
+  window.location.href = `${SUPA_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+}
+function sbGetTokenFromUrl(){
+  const hash = window.location.hash;
+  if(!hash) return null;
+  const params = new URLSearchParams(hash.replace("#",""));
+  const token = params.get("access_token");
+  if(token){
+    localStorage.setItem("glasscorp_session", token);
+    window.history.replaceState(null,"",window.location.pathname);
+  }
+  return token;
+}
+
 function dbToStrain(row){
   return {
     id: row.id,
@@ -309,7 +389,7 @@ const L={
     enterGuild:"Enter The Guild →",skipForNow:"Browse as Guest",
     claimRequest:"Claim Approved",claimDesc:"We will contact you to confirm your batch.",
     backToShelf:"Back to The Vault",claimedItems:"Claimed Batches",
-    noHistory:"No batches claimed yet. Enter The Vault.",logout:"Leave Guild",
+    noHistory:"No batches claimed yet. Enter The Vault.",logout:"Leave Arena",
     adminAccess:"Control Room",enterPin:"Enter Access Code",wrongPin:"Wrong code. Try again.",
     total:"Total GMC",stock:"In Vault",remaining:"bits left",
     filterAll:"All Batches",
@@ -1430,11 +1510,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
 // ── PROFILE ──
 function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,onUpdateProfile,transactions,onAddToCart,strains,onOpenCart,orders}){
   const th=T.base;
-  const [name,setName]=useState("");
-  const [contact,setContact]=useState("whatsapp");
-  const [phone,setPhone]=useState("");
-  const [lineId,setLineId]=useState("");
-  const [granted,setGranted]=useState(false);
+  // auth state managed below in auth screens
 
   // Delivery profile state
   const [editingDelivery,setEditingDelivery]=useState(false);
@@ -1458,121 +1534,242 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
     setTimeout(()=>setDeliverySaved(false),2500);
   }
 
-  function handleSubmit(){
-    const contactVal=contact==="whatsapp"?phone.trim():lineId.trim();
-    if(!name.trim()||!contactVal) return;
-    setGranted(true);
-    setTimeout(()=>{
-      onLogin({name:name.trim(),contact,phone:phone.trim(),lineId:lineId.trim(),gmcBalance:0,totalSpent:0});
-    },2000);
+
+
+  // ── AUTH SCREENS ──
+  const [authScreen,setAuthScreen]=useState("login"); // login | signup | forgot | personame
+  const [authEmail,setAuthEmail]=useState("");
+  const [authPassword,setAuthPassword]=useState("");
+  const [authConfirm,setAuthConfirm]=useState("");
+  const [authPersoname,setAuthPersoname]=useState("");
+  const [authLoading,setAuthLoading]=useState(false);
+  const [authError,setAuthError]=useState("");
+  const [authSuccess,setAuthSuccess]=useState("");
+  const [authGoogleUser,setAuthGoogleUser]=useState(null); // temp hold google user while picking personame
+
+  async function handleLogin(){
+    if(!authPersoname.trim()||!authPassword.trim()) return;
+    setAuthLoading(true); setAuthError(""); setAuthSuccess("");
+    // Convert personame to internal email
+    const fakeEmail=authPersoname.trim().toLowerCase().replace(/[^a-z0-9]/g,"_")+"@glasscorp.gg";
+    const {data,error}=await sbSignIn(fakeEmail,authPassword.trim());
+    if(error){ setAuthError("Wrong codename or password. Try again."); setAuthLoading(false); return; }
+    const token=data.access_token;
+    localStorage.setItem("glasscorp_session",token);
+    const authId=data.user?.id;
+    const member=await sbGetMemberByAuthId(authId);
+    if(member){
+      onLogin(member);
+    } else {
+      setAuthError("Account not found. Please sign up.");
+    }
+    setAuthLoading(false);
   }
 
-  const contactOk = contact==="whatsapp"?phone.trim().length>0:lineId.trim().length>0;
-  const formOk = name.trim().length>0 && contactOk;
+  async function handleSignup(){
+    if(!authPassword.trim()||!authPersoname.trim()) return;
+    if(authPassword!==authConfirm){ setAuthError("Passwords do not match."); return; }
+    if(authPassword.length<6){ setAuthError("Password must be at least 6 characters."); return; }
+    if(authPersoname.trim().length<2){ setAuthError("Personame must be at least 2 characters."); return; }
+    setAuthLoading(true); setAuthError(""); setAuthSuccess("");
+    // Check personame unique
+    const unique=await sbCheckPersonameUnique(authPersoname.trim());
+    if(!unique){ setAuthError("That Personame is already taken. Choose another."); setAuthLoading(false); return; }
+    // Build internal fake email from personame for Supabase Auth
+    const fakeEmail=authPersoname.trim().toLowerCase().replace(/[^a-z0-9]/g,"_")+"@glasscorp.gg";
+    // Create auth account with fake email
+    const {data,error}=await sbSignUp(fakeEmail,authPassword.trim());
+    if(error){ setAuthError(error); setAuthLoading(false); return; }
+    const authId=data.user?.id||data.id;
+    if(!authId){ setAuthError("Signup failed. Please try again."); setAuthLoading(false); return; }
+    // Store real email (if provided) in members table for recovery + Google linking
+    const realEmail=authEmail.trim()||fakeEmail;
+    const saved=await sbCreateMember(authId,realEmail,authPersoname.trim());
+    if(saved){
+      const token=data.session?.access_token||data.access_token||"";
+      if(token) localStorage.setItem("glasscorp_session",token);
+      // Auto-login if session returned, otherwise prompt
+      if(token){
+        onLogin(dbToMember(saved));
+      } else {
+        setAuthSuccess("Welcome to The Arena! You can now log in with your Personame.");
+        setAuthScreen("login");
+      }
+    } else {
+      setAuthError("Signup failed. Please try again.");
+    }
+    setAuthLoading(false);
+  }
+
+  async function handleForgot(){
+    if(!authPersoname.trim()) return;
+    setAuthLoading(true); setAuthError(""); setAuthSuccess("");
+    // Look up member by personame to get their real email
+    const rows=await sbGet("members","personame=eq."+encodeURIComponent(authPersoname.trim())+"&select=email");
+    if(!rows||rows.length===0){
+      setAuthError("Personame not found. Check your codename.");
+      setAuthLoading(false); return;
+    }
+    const email=rows[0].email||"";
+    if(!email||email.endsWith("@glasscorp.gg")){
+      setAuthError("No recovery email on file. Please contact support.");
+      setAuthLoading(false); return;
+    }
+    const ok=await sbForgotPassword(email);
+    setAuthLoading(false);
+    if(ok){ setAuthSuccess("Reset link sent to your email!"); }
+    else { setAuthError("Failed to send reset email. Try again."); }
+  }
+
+  // Check for pending Google user (new Google signup needs personame)
+  useEffect(()=>{
+    const pending=localStorage.getItem("glasscorp_google_pending");
+    if(pending){
+      try{
+        const gUser=JSON.parse(pending);
+        setAuthGoogleUser(gUser);
+        setAuthScreen("personame");
+        localStorage.removeItem("glasscorp_google_pending");
+      }catch(_){}
+    }
+  },[]);
+
+  async function handlePersonameSubmit(){
+    if(!authPersoname.trim()||!authGoogleUser) return;
+    setAuthLoading(true); setAuthError("");
+    const unique=await sbCheckPersonameUnique(authPersoname.trim());
+    if(!unique){ setAuthError("That Personame is taken. Choose another."); setAuthLoading(false); return; }
+    const saved=await sbCreateMember(
+      authGoogleUser.id, authGoogleUser.email,
+      authPersoname.trim(), authGoogleUser.user_metadata?.avatar_url||""
+    );
+    if(saved){
+      onLogin(dbToMember(saved));
+    } else {
+      setAuthError("Failed to create profile. Please try again.");
+    }
+    setAuthLoading(false);
+  }
+
+  const inputStyle={width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.04)",border:`1px solid ${th.border}`,color:th.text,padding:"14px 16px",fontSize:14,fontFamily:"'Inter',sans-serif",outline:"none",transition:"border 0.2s",marginBottom:12};
 
   if(!user) return(
-    <div style={{minHeight:"100vh",background:th.bgDeep,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 24px 120px",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:th.bgDeep,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 20px 120px",position:"relative",overflow:"hidden"}}>
       <style>{`
         @keyframes accessScan{0%{transform:translateY(-100%)}100%{transform:translateY(200vh)}}
-        @keyframes grantPulse{0%,100%{opacity:0.7;transform:scale(1)}50%{opacity:1;transform:scale(1.02)}}
-        .profile-input:focus{border-color:#00d4ff!important;box-shadow:0 0 0 1px #00d4ff40!important;outline:none!important;}
-        .profile-input::placeholder{color:#7a7090!important;}
+        .gc-input:focus{border-color:#00d4ff!important;outline:none!important;}
+        .gc-input::placeholder{color:#7a7090!important;}
+        .gc-btn:hover{opacity:0.85!important;}
       `}</style>
+      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px)",backgroundSize:"44px 44px",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(0,212,255,0.08),transparent)",animation:"accessScan 10s linear infinite",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:"60vw",height:"60vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.05) 0%,transparent 65%)",pointerEvents:"none"}}/>
 
-      {/* Background grid */}
-      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px)",backgroundSize:"44px 44px",pointerEvents:"none"}}/>
-      {/* Scanline */}
-      <div style={{position:"absolute",left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(0,212,255,0.1),transparent)",animation:"accessScan 10s linear infinite",pointerEvents:"none"}}/>
-      {/* Corner accents */}
-      {[[true,false,true,false],[true,false,false,true],[false,true,true,false],[false,true,false,true]].map(([bt,bb,bl,br],i)=>(
-        <div key={i} style={{position:"absolute",top:i<2?20:"auto",bottom:i>=2?20:"auto",left:i%2===0?20:"auto",right:i%2===1?20:"auto",width:16,height:16,borderTop:bt?"1px solid rgba(0,212,255,0.3)":"none",borderBottom:bb?"1px solid rgba(0,212,255,0.3)":"none",borderLeft:bl?"1px solid rgba(0,212,255,0.3)":"none",borderRight:br?"1px solid rgba(0,212,255,0.3)":"none",pointerEvents:"none"}}/>
-      ))}
-      <div style={{position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:"60vw",height:"60vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.06) 0%,transparent 65%)",pointerEvents:"none"}}/>
+      <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
 
-      <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:420}}>
-
-        {/* Header */}
-        <div style={{textAlign:"center",marginBottom:36}}>
-          <div style={{fontSize:9,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:12,textShadow:`0 0 8px ${th.a1}`}}>◆ Glasscorp · Secure Access ◆</div>
-          <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(28px,6vw,42px)",fontWeight:900,color:th.text,textTransform:"uppercase",letterSpacing:"-0.02em",lineHeight:0.95,marginBottom:10}}>
-            {granted?"ACCESS":"REQUEST"}
-            <br/>
-            <span style={{color:th.a1,textShadow:`0 0 20px ${th.a1}`}}>{granted?"GRANTED":"CLEARANCE"}</span>
+        {/* Logo / Brand */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:9,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:10,textShadow:`0 0 8px ${th.a1}`}}>◆ Glasscorp Arena ◆</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(26px,5vw,36px)",fontWeight:900,color:th.text,textTransform:"uppercase",letterSpacing:"-0.02em",lineHeight:0.95,marginBottom:8}}>
+            {authScreen==="login"&&<>Enter The<br/><span style={{color:th.a1,textShadow:`0 0 16px ${th.a1}`}}>Arena</span></>}
+            {authScreen==="signup"&&<>Join The<br/><span style={{color:th.a2,textShadow:`0 0 16px ${th.a2}`}}>Arena</span></>}
+            {authScreen==="forgot"&&<>Reset<br/><span style={{color:th.amber,textShadow:`0 0 16px ${th.amber}`}}>Access</span></>}
+            {authScreen==="personame"&&<>Choose Your<br/><span style={{color:th.a1,textShadow:`0 0 16px ${th.a1}`}}>Codename</span></>}
           </div>
-          <p style={{fontSize:12,color:th.dim,lineHeight:1.7,maxWidth:320,margin:"0 auto"}}>
-            {granted?"Identity confirmed. Initializing vault access...":"Assign your personame and secure channel to request access."}
-          </p>
+          <div style={{fontSize:11,color:th.dim,lineHeight:1.6}}>
+            {authScreen==="login"&&"Enter your credentials to access The Vault"}
+            {authScreen==="signup"&&"Create your Glasscorp identity"}
+            {authScreen==="forgot"&&"We'll send a reset link to your email"}
+            {authScreen==="personame"&&"Pick a unique codename for The Arena"}
+          </div>
         </div>
 
-        {/* Single form card — all fields visible */}
-        {!granted?(
-          <div style={{background:`${th.bgCard}f2`,border:`1px solid ${th.border}`,padding:"28px",backdropFilter:"blur(20px)",boxShadow:"0 0 60px rgba(123,47,255,0.08)",position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${th.a1}40,transparent)`}}/>
+        {/* Card */}
+        <div style={{background:`${th.bgCard}f0`,border:`1px solid ${th.border}`,padding:"28px",backdropFilter:"blur(20px)",boxShadow:"0 0 60px rgba(123,47,255,0.06)",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:authScreen==="login"?`linear-gradient(90deg,transparent,${th.a1},transparent)`:authScreen==="signup"?`linear-gradient(90deg,transparent,${th.a2},transparent)`:`linear-gradient(90deg,transparent,${th.amber},transparent)`}}/>
 
-            {/* Codename */}
-            <div style={{fontSize:8,letterSpacing:3,color:th.a1,textTransform:"uppercase",marginBottom:8}}>Personame</div>
-            <input
-              className="profile-input"
-              placeholder="Enter your personame..."
-              value={name}
-              onChange={e=>setName(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&formOk&&handleSubmit()}
-              autoFocus
-              style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.03)",border:`1px solid ${name.trim()?th.a1:th.border}`,color:th.text,padding:"15px 16px",fontSize:15,fontFamily:"'Inter',sans-serif",fontWeight:700,letterSpacing:1,transition:"all 0.2s",marginBottom:20}}
-            />
+          {/* Error / Success */}
+          {authError&&<div style={{padding:"10px 14px",background:"rgba(232,80,32,0.1)",border:"1px solid rgba(232,80,32,0.3)",color:"#e85020",fontSize:11,marginBottom:14,letterSpacing:0.5}}>{authError}</div>}
+          {authSuccess&&<div style={{padding:"10px 14px",background:"rgba(0,255,136,0.08)",border:"1px solid rgba(0,255,136,0.25)",color:"#00ff88",fontSize:11,marginBottom:14,letterSpacing:0.5}}>{authSuccess}</div>}
 
-            {/* Secure channel */}
-            <div style={{fontSize:8,letterSpacing:3,color:th.a1,textTransform:"uppercase",marginBottom:8}}>Secure Channel</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
-              {[
-                {id:"whatsapp",label:"WhatsApp",icon:"💚",color:"#25d366"},
-                {id:"line",label:"LINE",icon:"💬",color:"#06c755"},
-              ].map(ch=>(
-                <button key={ch.id} onClick={()=>setContact(ch.id)}
-                  style={{padding:"11px",background:contact===ch.id?`${ch.color}15`:"rgba(255,255,255,0.02)",border:`1px solid ${contact===ch.id?ch.color:"rgba(255,255,255,0.08)"}`,color:contact===ch.id?ch.color:th.dim,cursor:"pointer",fontSize:11,letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:contact===ch.id?`0 0 12px ${ch.color}25`:"none"}}>
-                  <span>{ch.icon}</span>{ch.label}
-                </button>
-              ))}
+          {/* ── LOGIN SCREEN ── */}
+          {authScreen==="login"&&(<>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
+            <input className="gc-input" type="text" placeholder="Your PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} autoFocus style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a1} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Password</div>
+            <input className="gc-input" type="password" placeholder="••••••••" value={authPassword} onChange={e=>{setAuthPassword(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{...inputStyle,marginBottom:6}} onFocus={e=>e.target.style.borderColor=th.a1} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <div style={{textAlign:"right",marginBottom:20}}>
+              <button onClick={()=>{setAuthScreen("forgot");setAuthError("");setAuthSuccess("");}} style={{background:"none",border:"none",color:th.dim,cursor:"pointer",fontSize:10,letterSpacing:1,fontFamily:"'Inter',sans-serif",textDecoration:"underline",opacity:0.7}}>Forgot password?</button>
             </div>
-            {contact==="whatsapp"?(
-              <input
-                className="profile-input"
-                placeholder="Your WhatsApp number..."
-                value={phone}
-                onChange={e=>setPhone(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&formOk&&handleSubmit()}
-                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.03)",border:`1px solid ${phone.trim()?th.a1:th.border}`,color:th.text,padding:"15px 16px",fontSize:14,fontFamily:"'Inter',sans-serif",transition:"all 0.2s",marginBottom:20}}
-              />
-            ):(
-              <input
-                className="profile-input"
-                placeholder="Your LINE ID..."
-                value={lineId}
-                onChange={e=>setLineId(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&formOk&&handleSubmit()}
-                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.03)",border:`1px solid ${lineId.trim()?th.a1:th.border}`,color:th.text,padding:"15px 16px",fontSize:14,fontFamily:"'Inter',sans-serif",transition:"all 0.2s",marginBottom:20}}
-              />
-            )}
-
-            {/* Submit */}
-            <button
-              onClick={handleSubmit}
-              disabled={!formOk}
-              style={{width:"100%",padding:"16px",background:formOk?`linear-gradient(90deg,${th.a1}20,${th.a2}20,${th.a1}20)`:"rgba(255,255,255,0.03)",border:`1px solid ${formOk?th.a1:th.border}`,color:formOk?th.a1:th.dim,cursor:formOk?"pointer":"not-allowed",fontSize:11,fontWeight:900,letterSpacing:4,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",boxShadow:formOk?`0 0 20px ${th.a1}20`:"none",transition:"all 0.3s"}}>
-              ◆ Request Vault Access ◆
+            <button className="gc-btn" onClick={handleLogin} disabled={authLoading||!authPersoname||!authPassword} style={{width:"100%",padding:"15px",background:th.a1,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:10,opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
+              {authLoading?"CONNECTING...":"◆ Enter The Arena"}
             </button>
-          </div>
-        ):(
-          <div style={{padding:"28px",background:"rgba(0,255,136,0.06)",border:"1px solid rgba(0,255,136,0.25)",textAlign:"center",animation:"grantPulse 1.5s ease-in-out infinite"}}>
-            <div style={{fontSize:28,marginBottom:10}}>✓</div>
-            <div style={{fontSize:11,letterSpacing:3,color:"#00ff88",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:700}}>Identity Confirmed · Access Granted</div>
-            <div style={{fontSize:9,color:"rgba(0,255,136,0.6)",marginTop:6,letterSpacing:1}}>Initializing your vault...</div>
-          </div>
-        )}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <div style={{flex:1,height:1,background:th.border}}/>
+              <span style={{fontSize:9,color:th.dim,letterSpacing:2,textTransform:"uppercase"}}>or</span>
+              <div style={{flex:1,height:1,background:th.border}}/>
+            </div>
+            <button className="gc-btn" onClick={sbSignInWithGoogle} style={{width:"100%",padding:"13px",background:"rgba(255,255,255,0.05)",border:`1px solid ${th.border}`,color:th.text,cursor:"pointer",fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"opacity 0.2s"}}>
+              <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+              Continue with Google
+            </button>
+            <div style={{textAlign:"center",borderTop:`1px solid ${th.border}`,paddingTop:16}}>
+              <span style={{fontSize:11,color:th.dim}}>Not a member? </span>
+              <button onClick={()=>{setAuthScreen("signup");setAuthError("");setAuthSuccess("");setAuthPersoname("");setAuthPassword("");setAuthConfirm("");}} style={{background:"none",border:"none",color:th.a1,cursor:"pointer",fontSize:11,fontFamily:"'Inter',sans-serif",fontWeight:700,textDecoration:"underline"}}>Sign Up</button>
+            </div>
+          </>)}
 
-        {/* Skip */}
-        {!granted&&(
-          <button onClick={onSkip} style={{width:"100%",marginTop:12,padding:"12px",background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:10,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:0.6}}>
+          {/* ── SIGNUP SCREEN ── */}
+          {authScreen==="signup"&&(<>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
+            <input className="gc-input" type="text" placeholder="Pick a unique PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} autoFocus style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Email <span style={{color:th.dim,fontWeight:400,letterSpacing:1,textTransform:"none",fontSize:9}}>(for recovery + Google login)</span></div>
+            <input className="gc-input" type="email" placeholder="your@email.com" value={authEmail} onChange={e=>{setAuthEmail(e.target.value);setAuthError("");}} style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Password</div>
+            <input className="gc-input" type="password" placeholder="Min 6 characters" value={authPassword} onChange={e=>{setAuthPassword(e.target.value);setAuthError("");}} style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Confirm Password</div>
+            <input className="gc-input" type="password" placeholder="Repeat password" value={authConfirm} onChange={e=>{setAuthConfirm(e.target.value);setAuthError("");}} style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <button className="gc-btn" onClick={handleSignup} disabled={authLoading||!authEmail||!authPassword||!authPersoname||!authConfirm} style={{width:"100%",padding:"15px",background:th.a2,border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:10,opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
+              {authLoading?"CREATING...":"◆ Join The Arena"}
+            </button>
+            {/* Google */}
+            <button className="gc-btn" onClick={sbSignInWithGoogle} style={{width:"100%",padding:"13px",background:"rgba(255,255,255,0.05)",border:`1px solid ${th.border}`,color:th.text,cursor:"pointer",fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"opacity 0.2s"}}>
+              <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+              Continue with Google
+            </button>
+            <div style={{textAlign:"center",borderTop:`1px solid ${th.border}`,paddingTop:16,display:"flex",justifyContent:"center",gap:16}}>
+              <button onClick={()=>{setAuthScreen("login");setAuthError("");setAuthSuccess("");setAuthPersoname("");setAuthPassword("");setAuthConfirm("");}} style={{background:"none",border:"none",color:th.a1,cursor:"pointer",fontSize:11,fontFamily:"'Inter',sans-serif",fontWeight:700,textDecoration:"underline"}}>← Back to Login</button>
+            </div>
+          </>)}
+
+          {/* ── FORGOT PASSWORD ── */}
+          {authScreen==="forgot"&&(<>
+            <div style={{fontSize:11,color:th.dim,marginBottom:14,lineHeight:1.6}}>Enter your Personame and we'll send a reset link to your registered email.</div>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
+            <input className="gc-input" type="text" placeholder="Your PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handleForgot()} autoFocus style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.amber} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <button className="gc-btn" onClick={handleForgot} disabled={authLoading||!authPersoname.trim()} style={{width:"100%",padding:"15px",background:th.amber,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:18,opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
+              {authLoading?"SENDING...":"Send Reset Link"}
+            </button>
+            <div style={{textAlign:"center",borderTop:`1px solid ${th.border}`,paddingTop:16}}>
+              <button onClick={()=>{setAuthScreen("login");setAuthError("");setAuthSuccess("");}} style={{background:"none",border:"none",color:th.a1,cursor:"pointer",fontSize:11,fontFamily:"'Inter',sans-serif",fontWeight:700,textDecoration:"underline"}}>← Back to Login</button>
+            </div>
+          </>)}
+
+          {/* ── PERSONAME PICKER (Google new users) ── */}
+          {authScreen==="personame"&&(<>
+            <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>Welcome! You're signing in with Google for the first time. Choose a unique codename for The Arena.</div>
+            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame (Codename)</div>
+            <input className="gc-input" type="text" placeholder="Your unique codename..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handlePersonameSubmit()} autoFocus style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.a1} onBlur={e=>e.target.style.borderColor=th.border}/>
+            <button className="gc-btn" onClick={handlePersonameSubmit} disabled={authLoading||!authPersoname.trim()} style={{width:"100%",padding:"15px",background:th.a1,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
+              {authLoading?"SAVING...":"◆ Confirm Codename"}
+            </button>
+          </>)}
+
+        </div>
+
+        {/* Guest */}
+        {(authScreen==="login"||authScreen==="signup")&&(
+          <button onClick={onSkip} style={{width:"100%",marginTop:10,padding:"12px",background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:10,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:0.5}}>
             Browse as guest →
           </button>
         )}
@@ -1864,7 +2061,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
               style={{padding:"13px",background:"transparent",border:`1px solid ${th.border}`,color:th.dim,cursor:"pointer",fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s"}}
               onMouseEnter={e=>{e.currentTarget.style.borderColor="#e85020";e.currentTarget.style.color="#e85020";}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor=th.border;e.currentTarget.style.color=th.dim;}}>
-              Leave Guild
+              Leave Arena
             </button>
           </div>
         </div>
@@ -1957,7 +2154,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
 
         {/* ── RANK LADDER ── */}
         <div style={{background:th.bgCard,border:`1px solid ${th.border}`,padding:"20px 24px"}}>
-          <div style={{fontSize:8,letterSpacing:3,color:th.a2,textTransform:"uppercase",marginBottom:14}}>Guild Ranks</div>
+          <div style={{fontSize:8,letterSpacing:3,color:th.a2,textTransform:"uppercase",marginBottom:14}}>Arena Ranks</div>
           <div style={{display:"flex",flexDirection:"column",gap:2}}>
             {RANKS.map(r=>{
               const isCurrentRank=rank.name===r.name;
@@ -4925,6 +5122,34 @@ export default function App(){
   });
   const th=T.base;
 
+  // ── SESSION + GOOGLE OAUTH TOKEN DETECTION ──
+  useEffect(()=>{
+    // Check for Google OAuth token in URL hash (after redirect back)
+    const urlToken = sbGetTokenFromUrl();
+    const sessionToken = urlToken || localStorage.getItem("glasscorp_session");
+    if(sessionToken){
+      sbGetSession().then(async session=>{
+        if(!session) return;
+        const authId = session.user?.id;
+        if(!authId) return;
+        const member = await sbGetMemberByAuthId(authId);
+        if(member){
+          setUser(member);
+          setMembers(ms=>{
+            const exists=ms.find(m=>m.id===member.id);
+            if(exists) return ms.map(m=>m.id===member.id?member:m);
+            return [...ms,member];
+          });
+        } else if(urlToken){
+          // New Google user — need personame
+          // Store google user data for personame picker
+          // This is handled in ProfilePage via authGoogleUser state
+          localStorage.setItem("glasscorp_google_pending", JSON.stringify(session.user));
+        }
+      }).catch(()=>{});
+    }
+  },[]);
+
   // ── LOAD FROM SUPABASE ON STARTUP ──
   useEffect(()=>{
     // Load strains
@@ -4979,25 +5204,16 @@ export default function App(){
   useEffect(()=>{ saveOrders(orders); },[orders]);
   useEffect(()=>{ saveTx(transactions); },[transactions]);
 
-  async function registerMember(u){
-    const newMember={...u,id:Date.now(),joinedAt:new Date().toISOString(),gmcBalance:0,totalSpent:0,claimHistory:[]};
+  // onLogin — receives a fully formed member object from auth
+  function registerMember(member){
+    setUser(member);
     setMembers(ms=>{
-      const exists=ms.find(m=>m.name===u.name&&(m.phone===u.phone||m.lineId===u.lineId));
-      if(exists){
-        setUser(exists);
-        return ms;
-      }
-      const updated=[...ms,newMember];
-      setUser(newMember);
-      // Save to Supabase
-      sbInsert("members",{
-        id:newMember.id, name:newMember.name, phone:newMember.phone||"",
-        line_id:newMember.lineId||"", gmc_balance:0, total_spent:0,
-        claim_history:[], country_code:newMember.countryCode||"+66",
-        joined_at:newMember.joinedAt
-      }).catch(()=>{});
-      return updated;
+      const exists=ms.find(m=>m.id===member.id);
+      if(exists) return ms.map(m=>m.id===member.id?member:m);
+      return [...ms,member];
     });
+    setTab("home");
+    window.scrollTo(0,0);
   }
 
   function updateMemberBalance(memberId,gmcDelta,txNote){
@@ -5357,7 +5573,7 @@ export default function App(){
         {tab==="home"&&!strain&&!advisorStrain&&<HomePage t={t} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} strains={liveStrains} featuredIds={featuredIds} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {tab==="shelf"&&!strain&&!advisorStrain&&<TheShelf t={t} user={user} strains={liveStrains} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {(strain||advisorStrain)&&<StrainDetail strain={strain||advisorStrain} t={t} user={user} onBack={()=>{setStrain(null);setAdvisorStrain(null);setTab("shelf");window.scrollTo(0,0);}} onClaim={handleClaim} onLogin={()=>{setStrain(null);setAdvisorStrain(null);setTab("profile");window.scrollTo(0,0);}} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onAddToCart={addToCart} cart={cart}/>}
-        {tab==="profile"&&!strain&&!advisorStrain&&<ProfilePage t={t} user={user} onLogin={registerMember} onSkip={()=>setTab("home")} onLogout={()=>{setUser(null);setTab("home");}} onShowPin={()=>setShowPin(true)} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} onUpdateProfile={(updated)=>{
+        {tab==="profile"&&!strain&&!advisorStrain&&<ProfilePage t={t} user={user} onLogin={registerMember} onSkip={()=>setTab("home")} onLogout={()=>{ const tok=localStorage.getItem("glasscorp_session"); if(tok) sbSignOut(tok).catch(()=>{}); localStorage.removeItem("glasscorp_session"); localStorage.removeItem("glasscorp_google_pending"); setUser(null); setTab("home"); }} onShowPin={()=>setShowPin(true)} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} onUpdateProfile={(updated)=>{
   setUser(updated);
   setMembers(ms=>ms.map(m=>m.id===updated.id?updated:m));
   // Sync delivery info to Supabase
