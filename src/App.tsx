@@ -295,7 +295,10 @@ function GlobalParticles(){
       });
     }
     anim.current=requestAnimationFrame(draw);
-    return()=>{ cancelAnimationFrame(anim.current); window.removeEventListener("resize",resize); };
+    // Pause when tab not visible — saves CPU and battery ✅
+    function onVisibility(){ if(document.hidden){ cancelAnimationFrame(anim.current); } else { anim.current=requestAnimationFrame(draw); } }
+    document.addEventListener("visibilitychange",onVisibility);
+    return()=>{ cancelAnimationFrame(anim.current); window.removeEventListener("resize",resize); document.removeEventListener("visibilitychange",onVisibility); };
   },[]);
   return <canvas ref={ref} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0}}/>;
 }
@@ -392,17 +395,29 @@ function FluxText({text,active}){
 
 // ── GMC COIN ──
 function GMCCoin({size=24,theme}){
-  const [rot,setRot]=useState(0);
-  useEffect(()=>{
-    // 80ms instead of 30ms — 3x less CPU, still looks smooth
-    const iv=setInterval(()=>setRot(r=>(r+5)%360),80);
-    return()=>clearInterval(iv);
-  },[]);
-  const squish=Math.abs(Math.cos(rot*Math.PI/180));
+  // Pure CSS animation — zero JS, zero React re-renders, 100% GPU ✅
+  const uid=useRef("coin"+Math.random().toString(36).slice(2,6)).current;
   return(
-    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:size,height:size,borderRadius:"50%",background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,transform:`scaleX(${0.3+squish*0.7})`,fontSize:size*0.45,flexShrink:0,transition:"none",fontWeight:900,color:"rgba(0,0,0,0.7)"}}>
-      G
-    </span>
+    <>
+      <style>{`
+        @keyframes coin-spin-${uid}{
+          0%{transform:scaleX(1)}
+          25%{transform:scaleX(0.3)}
+          50%{transform:scaleX(1)}
+          75%{transform:scaleX(0.3)}
+          100%{transform:scaleX(1)}
+        }
+      `}</style>
+      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
+        width:size,height:size,borderRadius:"50%",
+        background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,
+        boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,
+        fontSize:size*0.45,flexShrink:0,fontWeight:900,color:"rgba(0,0,0,0.7)",
+        animation:`coin-spin-${uid} 2.8s ease-in-out infinite`,
+        willChange:"transform"}}>
+        G
+      </span>
+    </>
   );
 }
 
@@ -595,71 +610,106 @@ function BudPlaceholder({color1,color2,size=220}){
   );
 }
 
-// ── KI ENERGY ANIMATION — replaces CBD + GMC/bit row on cards ──
+// ── KI ENERGY ANIMATION — GPU only: transform + opacity, no box-shadow animations ──
 function KiEnergy({type,size=60}){
   const isSpark=type==="Sativa"||type==="Sativa Hybrid";
   const isDeep=type==="Indica"||type==="Indica Hybrid";
-  // Stable uid — useRef so it doesn't regenerate on every render
   const uid=useRef("ki"+Math.random().toString(36).slice(2,8)).current;
+
   if(isSpark) return(
-    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,willChange:"transform"}}>
       <style>{`
         @keyframes spark-ring-${uid}{0%{transform:scale(0.5);opacity:0.9}100%{transform:scale(1.8);opacity:0}}
-        @keyframes spark-core-${uid}{0%,100%{box-shadow:0 0 8px 3px #FFD700,0 0 16px 6px #00AAFF40}50%{box-shadow:0 0 14px 5px #FFD700,0 0 28px 10px #00AAFF60}}
         @keyframes spark-bolt-${uid}{0%,100%{opacity:0.3;transform:scale(0.8) rotate(0deg)}50%{opacity:1;transform:scale(1.1) rotate(20deg)}}
+        @keyframes spark-glow-${uid}{0%,100%{opacity:0.5;transform:scale(0.95)}50%{opacity:1;transform:scale(1.05)}}
       `}</style>
-      {/* Expanding rings */}
+      {/* Expanding rings — transform+opacity only ✅ */}
       {[0,0.4,0.8].map((delay,i)=>(
         <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",border:"1px solid #FFD700",animation:`spark-ring-${uid} 1.2s ease-out ${delay}s infinite`,opacity:0}}/>
       ))}
-      {/* Core */}
-      <div style={{width:size*0.42,height:size*0.42,borderRadius:"50%",background:"radial-gradient(circle,#FFD700 0%,#00AAFF 60%,transparent 100%)",animation:`spark-core-${uid} 0.8s ease-in-out infinite`,position:"relative",zIndex:1}}/>
-      {/* Lightning bolts */}
+      {/* Glow layer behind core — static, no animation on box-shadow ✅ */}
+      <div style={{position:"absolute",width:size*0.55,height:size*0.55,borderRadius:"50%",
+        background:"radial-gradient(circle,#FFD70060 0%,#00AAFF30 50%,transparent 80%)",
+        animation:`spark-glow-${uid} 0.9s ease-in-out infinite`}}/>
+      {/* Core — static background, only scale animates ✅ */}
+      <div style={{width:size*0.42,height:size*0.42,borderRadius:"50%",
+        background:"radial-gradient(circle,#FFD700 0%,#00AAFF 60%,transparent 100%)",
+        position:"relative",zIndex:1}}/>
+      {/* Lightning bolts — transform+opacity only ✅ */}
       {[0,60,120,180,240,300].map((deg,i)=>(
-        <div key={i} style={{position:"absolute",width:2,height:size*0.3,background:`linear-gradient(${deg>180?"to top":"to bottom"},#FFD700,transparent)`,transform:`rotate(${deg}deg) translateY(-${size*0.18}px)`,transformOrigin:"bottom center",animation:`spark-bolt-${uid} ${0.6+i*0.1}s ease-in-out ${i*0.1}s infinite`,opacity:0.7}}/>
+        <div key={i} style={{position:"absolute",width:2,height:size*0.3,
+          background:`linear-gradient(${deg>180?"to top":"to bottom"},#FFD700,transparent)`,
+          transform:`rotate(${deg}deg) translateY(-${size*0.18}px)`,
+          transformOrigin:"bottom center",
+          animation:`spark-bolt-${uid} ${0.6+i*0.1}s ease-in-out ${i*0.1}s infinite`,opacity:0.7}}/>
       ))}
     </div>
   );
+
   if(isDeep) return(
-    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,willChange:"transform"}}>
       <style>{`
         @keyframes deep-breathe-${uid}{0%{transform:scale(0.5);opacity:0.8}100%{transform:scale(1.8);opacity:0}}
-        @keyframes deep-core-${uid}{0%,100%{box-shadow:0 0 10px 4px #CC0022,0 0 20px 8px #5500AA40}50%{box-shadow:0 0 18px 7px #CC0022,0 0 36px 14px #5500AA70}}
         @keyframes deep-orb-${uid}{0%{transform:rotate(0deg) translateX(${size*0.28}px)}100%{transform:rotate(360deg) translateX(${size*0.28}px)}}
         @keyframes deep-orb2-${uid}{0%{transform:rotate(180deg) translateX(${size*0.28}px)}100%{transform:rotate(540deg) translateX(${size*0.28}px)}}
+        @keyframes deep-glow-${uid}{0%,100%{opacity:0.4;transform:scale(0.9)}50%{opacity:0.8;transform:scale(1.1)}}
       `}</style>
-      {/* Expanding rings — same reach as Spark */}
+      {/* Expanding rings — transform+opacity only ✅ */}
       {[0,0.5,1.0].map((delay,i)=>(
-        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",border:"1px solid #CC002270",animation:`deep-breathe-${uid} 2.2s ease-out ${delay}s infinite`,opacity:0}}/>
+        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",
+          border:"1px solid #CC002270",
+          animation:`deep-breathe-${uid} 2.2s ease-out ${delay}s infinite`,opacity:0}}/>
       ))}
-      {/* Static inner rings */}
-      {[0,0.6].map((delay,i)=>(
-        <div key={i} style={{position:"absolute",width:`${75+i*15}%`,height:`${75+i*15}%`,borderRadius:"50%",border:`1px solid #5500AA40`,animation:`deep-breathe-${uid} ${2+i*0.5}s ease-in-out ${delay}s infinite`}}/>
-      ))}
-      {/* Dark core */}
-      <div style={{width:size*0.4,height:size*0.4,borderRadius:"50%",background:"radial-gradient(circle,#CC0022 0%,#5500AA 55%,transparent 100%)",animation:`deep-core-${uid} 1.8s ease-in-out infinite`,position:"relative",zIndex:1}}/>
-      {/* Orbiting dark orbs */}
-      <div style={{position:"absolute",width:6,height:6,borderRadius:"50%",background:"#CC0022",boxShadow:"0 0 6px #CC0022",animation:`deep-orb-${uid} 2s linear infinite`}}/>
-      <div style={{position:"absolute",width:4,height:4,borderRadius:"50%",background:"#5500AA",boxShadow:"0 0 4px #5500AA",animation:`deep-orb2-${uid} 2s linear infinite`}}/>
+      {/* Glow layer — opacity+scale only ✅ */}
+      <div style={{position:"absolute",width:size*0.6,height:size*0.6,borderRadius:"50%",
+        background:"radial-gradient(circle,#CC002250 0%,#5500AA30 55%,transparent 80%)",
+        animation:`deep-glow-${uid} 1.8s ease-in-out infinite`}}/>
+      {/* Core — static, no box-shadow animation ✅ */}
+      <div style={{width:size*0.4,height:size*0.4,borderRadius:"50%",
+        background:"radial-gradient(circle,#CC0022 0%,#5500AA 55%,transparent 100%)",
+        position:"relative",zIndex:1}}/>
+      {/* Orbiting orbs — transform only ✅ (static box-shadow, not animated) */}
+      <div style={{position:"absolute",width:6,height:6,borderRadius:"50%",
+        background:"#CC0022",boxShadow:"0 0 6px #CC0022",
+        animation:`deep-orb-${uid} 2s linear infinite`}}/>
+      <div style={{position:"absolute",width:4,height:4,borderRadius:"50%",
+        background:"#5500AA",boxShadow:"0 0 4px #5500AA",
+        animation:`deep-orb2-${uid} 2s linear infinite`}}/>
     </div>
   );
+
   // Flux
   return(
-    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,willChange:"transform"}}>
       <style>{`
-        @keyframes flux-spin-${uid}{0%{transform:scale(0.5) rotate(0deg);opacity:0.8}100%{transform:scale(1.8) rotate(360deg);opacity:0}}
+        @keyframes flux-ring-${uid}{0%{transform:scale(0.5) rotate(0deg);opacity:0.8}100%{transform:scale(1.8) rotate(360deg);opacity:0}}
         @keyframes flux-spin-r-${uid}{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
-        @keyframes flux-core-${uid}{0%,100%{box-shadow:0 0 10px 4px #FF1493,0 0 20px 8px #00AAFF40}50%{box-shadow:0 0 10px 4px #00AAFF,0 0 20px 8px #FF149340}}
+        @keyframes flux-spin-f-${uid}{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        @keyframes flux-glow-${uid}{0%,100%{opacity:0.5;transform:scale(0.95)}50%{opacity:1;transform:scale(1.05)}}
       `}</style>
-      {/* Expanding rings same as Spark */}
+      {/* Expanding rings — transform+opacity ✅ */}
       {[0,0.45,0.9].map((delay,i)=>(
-        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",border:"1px solid #FF149360",animation:`flux-spin-${uid} 1.2s ease-out ${delay}s infinite`,opacity:0}}/>
+        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",
+          border:"1px solid #FF149360",
+          animation:`flux-ring-${uid} 1.2s ease-out ${delay}s infinite`,opacity:0}}/>
       ))}
-      {/* Dual rotating arcs — full size */}
-      <div style={{position:"absolute",width:"95%",height:"95%",borderRadius:"50%",borderTop:"2px solid #FF149380",borderBottom:"2px solid transparent",borderLeft:"2px solid transparent",borderRight:"2px solid #00AAFF80",animation:`flux-spin-${uid} 1.2s linear infinite`}}/>
-      <div style={{position:"absolute",width:"75%",height:"75%",borderRadius:"50%",borderTop:"2px solid #00AAFF60",borderBottom:"2px solid transparent",borderLeft:"2px solid transparent",borderRight:"2px solid #FF149360",animation:`flux-spin-r-${uid} 0.9s linear infinite`}}/>
-      {/* Core shifts color */}
-      <div style={{width:size*0.38,height:size*0.38,borderRadius:"50%",background:"radial-gradient(circle,#FF1493 0%,#00AAFF 55%,transparent 100%)",animation:`flux-core-${uid} 1.5s ease-in-out infinite`,position:"relative",zIndex:1}}/>
+      {/* Rotating arcs — transform only ✅ */}
+      <div style={{position:"absolute",width:"95%",height:"95%",borderRadius:"50%",
+        borderTop:"2px solid #FF149380",borderBottom:"2px solid transparent",
+        borderLeft:"2px solid transparent",borderRight:"2px solid #00AAFF80",
+        animation:`flux-spin-f-${uid} 2s linear infinite`}}/>
+      <div style={{position:"absolute",width:"75%",height:"75%",borderRadius:"50%",
+        borderTop:"2px solid #00AAFF60",borderBottom:"2px solid transparent",
+        borderLeft:"2px solid transparent",borderRight:"2px solid #FF149360",
+        animation:`flux-spin-r-${uid} 1.5s linear infinite`}}/>
+      {/* Glow layer — opacity+scale only ✅ */}
+      <div style={{position:"absolute",width:size*0.55,height:size*0.55,borderRadius:"50%",
+        background:"radial-gradient(circle,#FF149340 0%,#00AAFF30 55%,transparent 80%)",
+        animation:`flux-glow-${uid} 1.5s ease-in-out infinite`}}/>
+      {/* Core — static, no box-shadow animation ✅ */}
+      <div style={{width:size*0.38,height:size*0.38,borderRadius:"50%",
+        background:"radial-gradient(circle,#FF1493 0%,#00AAFF 55%,transparent 100%)",
+        position:"relative",zIndex:1}}/>
     </div>
   );
 }
@@ -744,8 +794,8 @@ function SpinningBud({strain,size=200}){
   );
 }
 
-// ── STRAIN CARD ──
-function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartItem,discountSettings}){
+// ── STRAIN CARD — memoized so it only re-renders when strain data actually changes ──
+const StrainCard=React.memo(function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartItem,discountSettings}){
   const th=getTheme(strain.type);
   const ts=TIER_S[strain.tier]||TIER_S["TOP"];
   const [hov,setHov]=useState(false);
@@ -931,7 +981,7 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
     </div>
     </>
   );
-}
+});
 
 // ── THE SHELF ──
 function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartItem,discountSettings}){
@@ -5583,7 +5633,7 @@ export default function App(){
 
   if(!ageOk) return(
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}`}</style>
       <GlobalParticles/>
       <div style={{position:"fixed",inset:0,background:th.bgDeep,zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32}}>
         <div style={{position:"relative",zIndex:1,textAlign:"center",maxWidth:400}}>
