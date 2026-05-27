@@ -748,24 +748,33 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
         display:"flex",flexDirection:"column"}}>
 
       {/* ── HERO MEDIA ── */}
-      <div style={{position:"relative",width:"100%",height:240,overflow:"hidden",background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
+      <div style={{position:"relative",width:"100%",aspectRatio:"4/3",overflow:"hidden",
+        background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
         {strain.media?(
           <img src={strain.media} alt={strain.name}
-            style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",display:"block",transition:"transform 0.4s",transform:hov?"scale(1.04)":"scale(1)"}}/>
+            style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",
+              display:"block",transition:"transform 0.5s",transform:hov?"scale(1.03)":"scale(1)"}}/>
         ):(
-          <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:180,height:180,borderRadius:"50%",background:`radial-gradient(circle,${glowColor}20 0%,transparent 70%)`,pointerEvents:"none"}}/>
-            <BudPlaceholder color1={glowColor} color2={glowColor2} size={200}/>
+          <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",
+            justifyContent:"center",position:"relative"}}>
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+              width:"65%",height:"65%",borderRadius:"50%",
+              background:`radial-gradient(circle,${glowColor}25 0%,transparent 70%)`,pointerEvents:"none"}}/>
+            <BudPlaceholder color1={glowColor} color2={glowColor2} size={220}/>
           </div>
         )}
-        {/* bottom fade */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:50,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
+        {/* minimal bottom fade — keep photo visible */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:28,
+          background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
         {/* top glow line */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,
           background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022)`,
-          opacity:hov?1:0.7,transition:"opacity 0.3s",boxShadow:isSat?`0 0 10px #00aaff`:isInd?`0 0 10px #cc0022`:`0 0 10px #ff1493`}}/>
+          opacity:hov?1:0.7,transition:"opacity 0.3s",
+          boxShadow:isSat?`0 0 10px #00aaff`:isInd?`0 0 10px #cc0022`:`0 0 10px #ff1493`}}/>
         {/* tag badge */}
-        {strain.tag&&<div style={{position:"absolute",top:10,right:10,fontSize:8,letterSpacing:2,color:th.a1,background:`${th.bgDeep}dd`,padding:"3px 8px",textTransform:"uppercase",border:`1px solid ${th.a1}40`,backdropFilter:"blur(4px)"}}>{strain.tag}</div>}
+        {strain.tag&&<div style={{position:"absolute",top:10,right:10,fontSize:8,letterSpacing:2,
+          color:th.a1,background:`${th.bgDeep}dd`,padding:"3px 8px",textTransform:"uppercase",
+          border:`1px solid ${th.a1}40`,backdropFilter:"blur(4px)"}}>{strain.tag}</div>}
       </div>
 
       {/* ── CARD BODY ── */}
@@ -795,8 +804,10 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
         </span>
       </div>
 
-      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,marginBottom:20}}>
-        {isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}
+      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(18px,2.2vw,22px)",fontWeight:900,
+        color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:1.05,
+        marginBottom:14,minHeight:"2.2em",display:"flex",alignItems:"flex-start"}}>
+        <span>{isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}</span>
       </div>
 
       {/* RATIO BAR */}
@@ -916,7 +927,7 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
                   <div style={{fontSize:9,letterSpacing:3,color:th.dim,textTransform:"uppercase"}}>{items.length} Active Batches</div>
                 </div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:3}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:3}}>
                 {items.map(s=><StrainCard key={s.id} strain={s} t={t} onView={onView} onAddToCart={()=>setSheetStrain(s)} cartQty={(cart||[]).find(i=>i.strainId===s.id)?.qty||0} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings}/>)}
               </div>
             </div>
@@ -933,7 +944,7 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
                 </div>
               </div>
             )}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:3}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:3}}>
               {filtered.map(s=><StrainCard key={s.id} strain={s} t={t} onView={onView} onAddToCart={()=>setSheetStrain(s)} cartQty={(cart||[]).find(i=>i.strainId===s.id)?.qty||0} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings}/>)}
             </div>
           </div>
@@ -1417,7 +1428,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </h2>
           <GBtn onClick={onShelf} color={th.border} outline>{t.visitShelf} →</GBtn>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:3}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:3}}>
           {featuredStrains.map(s=>(
             <StrainCard key={s.id} strain={s} t={t}
               onView={onView||(()=>{})}
