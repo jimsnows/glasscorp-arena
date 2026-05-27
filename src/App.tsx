@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 // ── SUPABASE CLIENT ──
 const SUPA_URL = "https://febslpxjssjijooiukot.supabase.co";
