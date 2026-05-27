@@ -741,28 +741,25 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
   const glowColor=isSat?"#00aaff":isInd?"#cc0022":th.a1;
   const glowColor2=isSat?"#00ddff":isInd?"#5500aa":"#cc0022";
 
-  // blurred bg source — real img url or null (for bud placeholder we use a CSS trick)
-  const hasBgMedia = !!strain.media;
-
   return(
     <div onClick={()=>onView(strain)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{background:cardBg,border:`1px solid ${hov?th.a1:th.border}`,cursor:"pointer",position:"relative",overflow:"hidden",transition:"all 0.3s",
         boxShadow:hov?`0 0 30px ${th.a1}40,0 0 60px ${th.a1}10`:`0 0 10px ${th.border}`,
         display:"flex",flexDirection:"column"}}>
 
-      {/* ── HERO MEDIA — sharp, clear top area ── */}
-      <div style={{position:"relative",width:"100%",height:210,overflow:"hidden",background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
+      {/* ── HERO MEDIA ── */}
+      <div style={{position:"relative",width:"100%",height:240,overflow:"hidden",background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
         {strain.media?(
           <img src={strain.media} alt={strain.name}
             style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",display:"block",transition:"transform 0.4s",transform:hov?"scale(1.04)":"scale(1)"}}/>
         ):(
           <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:160,height:160,borderRadius:"50%",background:`radial-gradient(circle,${glowColor}20 0%,transparent 70%)`,pointerEvents:"none"}}/>
-            <BudPlaceholder color1={glowColor} color2={glowColor2} size={180}/>
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:180,height:180,borderRadius:"50%",background:`radial-gradient(circle,${glowColor}20 0%,transparent 70%)`,pointerEvents:"none"}}/>
+            <BudPlaceholder color1={glowColor} color2={glowColor2} size={200}/>
           </div>
         )}
-        {/* bottom fade into blurred bg section */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
+        {/* bottom fade */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:50,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
         {/* top glow line */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,
           background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022)`,
@@ -772,22 +769,7 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
       </div>
 
       {/* ── CARD BODY ── */}
-      <div style={{padding:"18px 20px 20px",display:"flex",flexDirection:"column",flex:1,position:"relative",overflow:"hidden"}}>
-
-        {/* Subtle blurred bg — only behind badge+name area, very understated */}
-        <div style={{position:"absolute",top:0,left:0,right:0,height:130,overflow:"hidden",zIndex:0,pointerEvents:"none"}}>
-          {strain.media?(
-            <img src={strain.media} alt="" aria-hidden
-              style={{width:"100%",height:"200%",objectFit:"cover",objectPosition:"center top",display:"block",
-                filter:"blur(24px) brightness(0.22) saturate(1.4)",transform:"scale(1.2)"}}/>
-          ):(
-            <div style={{width:"100%",height:"100%",
-              background:`radial-gradient(ellipse at 50% 0%,${glowColor}18 0%,transparent 70%)`}}/>
-          )}
-          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,height:50,
-            background:`linear-gradient(transparent,${cardBg})`}}/>
-        </div>
+      <div style={{padding:"16px 18px 18px",display:"flex",flexDirection:"column",flex:1}}>
 
       {/* PROMO BADGE */}
       {strain.promo?.active&&strain.promo.label&&(
@@ -796,15 +778,15 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
           border:"1px solid rgba(255,180,0,0.5)",
           backgroundSize:"200% 100%",
           animation:"promoShimmer 2s linear infinite",
-          position:"relative",overflow:"hidden",zIndex:1}}>
+          position:"relative",overflow:"hidden"}}>
           <style>{`@keyframes promoShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
           <span style={{fontSize:9,color:"#ffc800",fontWeight:900,letterSpacing:2,textTransform:"uppercase",textShadow:"0 0 8px rgba(255,200,0,0.8)"}}>⚡ {strain.promo.label}</span>
           {strain.promo.discount>0&&<span style={{fontSize:8,color:"#ffaa00",letterSpacing:1}}>−{strain.promo.discount}%</span>}
         </div>
       )}
 
-      {/* TYPE BADGE — compact, no stretch */}
-      <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:10,padding:"4px 12px",position:"relative",zIndex:1,alignSelf:"flex-start",
+      {/* TYPE BADGE */}
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:10,padding:"4px 12px",alignSelf:"flex-start",
         background:isSat?`linear-gradient(90deg,#00aaff30,#00ddff20)`:isInd?`linear-gradient(90deg,#cc002230,#5500aa20)`:`linear-gradient(90deg,#ff149320,#cc002220)`,
         border:`1px solid ${isSat?"#00aaff":isInd?"#cc0022":"rgba(255,20,100,0.4)"}`,boxShadow:`0 0 8px ${isSat?"#00aaff40":isInd?"#cc002240":"#cc002220"}`}}>
         <span style={{fontSize:10}}>{isSat?"⚡":isInd?"🌑":"🌀"}</span>
@@ -813,12 +795,12 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
         </span>
       </div>
 
-      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,marginBottom:20,position:"relative",zIndex:1}}>
+      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,marginBottom:20}}>
         {isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}
       </div>
 
-      {/* RATIO BAR — visually distinct */}
-      <div style={{marginBottom:20,position:"relative",zIndex:1}}>
+      {/* RATIO BAR */}
+      <div style={{marginBottom:20}}>
         <div style={{height:6,borderRadius:3,overflow:"hidden",background:"rgba(255,255,255,0.06)",position:"relative"}}>
           {isHyb?(
             // hybrid: split from both ends
