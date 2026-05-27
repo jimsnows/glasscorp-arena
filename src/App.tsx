@@ -397,27 +397,26 @@ function FluxText({text,active}){
 function GMCCoin({size=24,theme}){
   // Pure CSS animation — zero JS, zero React re-renders, 100% GPU ✅
   const uid=useRef("coin"+Math.random().toString(36).slice(2,6)).current;
+  // Inline the keyframe as a data URI approach won't work — inject into document head once
+  if(typeof document!=="undefined"){
+    const styleId="gc-coin-style";
+    if(!document.getElementById(styleId)){
+      const s=document.createElement("style");
+      s.id=styleId;
+      s.textContent=`@keyframes gc-coin-spin{0%{transform:scaleX(1)}25%{transform:scaleX(0.3)}50%{transform:scaleX(1)}75%{transform:scaleX(0.3)}100%{transform:scaleX(1)}}`;
+      document.head.appendChild(s);
+    }
+  }
   return(
-    <>
-      <style>{`
-        @keyframes coin-spin-${uid}{
-          0%{transform:scaleX(1)}
-          25%{transform:scaleX(0.3)}
-          50%{transform:scaleX(1)}
-          75%{transform:scaleX(0.3)}
-          100%{transform:scaleX(1)}
-        }
-      `}</style>
-      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
-        width:size,height:size,borderRadius:"50%",
-        background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,
-        boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,
-        fontSize:size*0.45,flexShrink:0,fontWeight:900,color:"rgba(0,0,0,0.7)",
-        animation:`coin-spin-${uid} 2.8s ease-in-out infinite`,
-        willChange:"transform"}}>
-        G
-      </span>
-    </>
+    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
+      width:size,height:size,borderRadius:"50%",
+      background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,
+      boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,
+      fontSize:size*0.45,flexShrink:0,fontWeight:900,color:"rgba(0,0,0,0.7)",
+      animation:"gc-coin-spin 2.8s ease-in-out infinite",
+      willChange:"transform"}}>
+      G
+    </span>
   );
 }
 
@@ -617,7 +616,7 @@ function KiEnergy({type,size=60}){
   const uid=useRef("ki"+Math.random().toString(36).slice(2,8)).current;
 
   if(isSpark) return(
-    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,willChange:"transform"}}>
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
         @keyframes spark-ring-${uid}{0%{transform:scale(0.5);opacity:0.9}100%{transform:scale(1.8);opacity:0}}
         @keyframes spark-bolt-${uid}{0%,100%{opacity:0.3;transform:scale(0.8) rotate(0deg)}50%{opacity:1;transform:scale(1.1) rotate(20deg)}}
@@ -647,7 +646,7 @@ function KiEnergy({type,size=60}){
   );
 
   if(isDeep) return(
-    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,willChange:"transform"}}>
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
         @keyframes deep-breathe-${uid}{0%{transform:scale(0.5);opacity:0.8}100%{transform:scale(1.8);opacity:0}}
         @keyframes deep-orb-${uid}{0%{transform:rotate(0deg) translateX(${size*0.28}px)}100%{transform:rotate(360deg) translateX(${size*0.28}px)}}
@@ -680,7 +679,7 @@ function KiEnergy({type,size=60}){
 
   // Flux
   return(
-    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,willChange:"transform"}}>
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
         @keyframes flux-ring-${uid}{0%{transform:scale(0.5) rotate(0deg);opacity:0.8}100%{transform:scale(1.8) rotate(360deg);opacity:0}}
         @keyframes flux-spin-r-${uid}{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
