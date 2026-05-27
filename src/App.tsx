@@ -742,79 +742,90 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
   const glowColor2=isSat?"#00ddff":isInd?"#5500aa":"#cc0022";
 
   return(
+    <>
+      <style>{`
+        @media(max-width:600px){
+          .gc-card-${strain.id}{flex-direction:row!important;}
+          .gc-card-media-${strain.id}{width:130px!important;min-width:130px!important;aspect-ratio:unset!important;height:auto!important;align-self:stretch!important;}
+          .gc-card-body-${strain.id}{padding:12px 14px!important;}
+          .gc-card-ratio-${strain.id}{display:none!important;}
+          .gc-card-ki-${strain.id}{display:none!important;}
+          .gc-card-effects-${strain.id}{display:none!important;}
+        }
+      `}</style>
     <div onClick={()=>onView(strain)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{background:cardBg,border:`1px solid ${hov?th.a1:th.border}`,cursor:"pointer",position:"relative",overflow:"hidden",transition:"all 0.3s",
+      className={`gc-card-${strain.id}`}
+      style={{background:cardBg,border:`1px solid ${hov?th.a1:th.border}`,cursor:"pointer",
+        position:"relative",overflow:"hidden",transition:"all 0.3s",
         boxShadow:hov?`0 0 30px ${th.a1}40,0 0 60px ${th.a1}10`:`0 0 10px ${th.border}`,
         display:"flex",flexDirection:"column"}}>
 
       {/* ── HERO MEDIA ── */}
-      <div style={{position:"relative",width:"100%",aspectRatio:"4/3",overflow:"hidden",
-        background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
+      <div className={`gc-card-media-${strain.id}`}
+        style={{position:"relative",width:"100%",aspectRatio:"3/2",overflow:"hidden",
+          background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
         {strain.media?(
           <img src={strain.media} alt={strain.name}
-            style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",
+            style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",
               display:"block",transition:"transform 0.5s",transform:hov?"scale(1.03)":"scale(1)"}}/>
         ):(
           <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",
             justifyContent:"center",position:"relative"}}>
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
-              width:"65%",height:"65%",borderRadius:"50%",
+              width:"70%",height:"70%",borderRadius:"50%",
               background:`radial-gradient(circle,${glowColor}25 0%,transparent 70%)`,pointerEvents:"none"}}/>
             <BudPlaceholder color1={glowColor} color2={glowColor2} size={220}/>
           </div>
         )}
-        {/* minimal bottom fade — keep photo visible */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:28,
-          background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
         {/* top glow line */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,
           background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022)`,
           opacity:hov?1:0.7,transition:"opacity 0.3s",
           boxShadow:isSat?`0 0 10px #00aaff`:isInd?`0 0 10px #cc0022`:`0 0 10px #ff1493`}}/>
         {/* tag badge */}
-        {strain.tag&&<div style={{position:"absolute",top:10,right:10,fontSize:8,letterSpacing:2,
-          color:th.a1,background:`${th.bgDeep}dd`,padding:"3px 8px",textTransform:"uppercase",
+        {strain.tag&&<div style={{position:"absolute",top:8,right:8,fontSize:7,letterSpacing:2,
+          color:th.a1,background:`${th.bgDeep}ee`,padding:"2px 6px",textTransform:"uppercase",
           border:`1px solid ${th.a1}40`,backdropFilter:"blur(4px)"}}>{strain.tag}</div>}
       </div>
 
       {/* ── CARD BODY ── */}
-      <div style={{padding:"16px 18px 18px",display:"flex",flexDirection:"column",flex:1}}>
+      <div className={`gc-card-body-${strain.id}`}
+        style={{padding:"14px 16px 16px",display:"flex",flexDirection:"column",flex:1}}>
 
       {/* PROMO BADGE */}
       {strain.promo?.active&&strain.promo.label&&(
-        <div style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",
+        <div style={{marginBottom:8,display:"inline-flex",alignItems:"center",gap:5,padding:"2px 8px",
           background:"linear-gradient(90deg,rgba(255,200,0,0.15),rgba(255,160,0,0.08),rgba(255,200,0,0.15))",
-          border:"1px solid rgba(255,180,0,0.5)",
-          backgroundSize:"200% 100%",
-          animation:"promoShimmer 2s linear infinite",
-          position:"relative",overflow:"hidden"}}>
+          border:"1px solid rgba(255,180,0,0.5)",backgroundSize:"200% 100%",
+          animation:"promoShimmer 2s linear infinite",position:"relative",overflow:"hidden"}}>
           <style>{`@keyframes promoShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
-          <span style={{fontSize:9,color:"#ffc800",fontWeight:900,letterSpacing:2,textTransform:"uppercase",textShadow:"0 0 8px rgba(255,200,0,0.8)"}}>⚡ {strain.promo.label}</span>
+          <span style={{fontSize:8,color:"#ffc800",fontWeight:900,letterSpacing:2,textTransform:"uppercase",textShadow:"0 0 8px rgba(255,200,0,0.8)"}}>⚡ {strain.promo.label}</span>
           {strain.promo.discount>0&&<span style={{fontSize:8,color:"#ffaa00",letterSpacing:1}}>−{strain.promo.discount}%</span>}
         </div>
       )}
 
       {/* TYPE BADGE */}
-      <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:10,padding:"4px 12px",alignSelf:"flex-start",
+      <div style={{display:"inline-flex",alignItems:"center",gap:5,marginBottom:8,padding:"3px 10px",alignSelf:"flex-start",
         background:isSat?`linear-gradient(90deg,#00aaff30,#00ddff20)`:isInd?`linear-gradient(90deg,#cc002230,#5500aa20)`:`linear-gradient(90deg,#ff149320,#cc002220)`,
-        border:`1px solid ${isSat?"#00aaff":isInd?"#cc0022":"rgba(255,20,100,0.4)"}`,boxShadow:`0 0 8px ${isSat?"#00aaff40":isInd?"#cc002240":"#cc002220"}`}}>
-        <span style={{fontSize:10}}>{isSat?"⚡":isInd?"🌑":"🌀"}</span>
-        <span style={{fontSize:9,letterSpacing:3,color:isSat?"#00aaff":isInd?"#cc0022":th.a1,textTransform:"uppercase",fontWeight:700,textShadow:`0 0 8px ${isSat?"#00aaff":isInd?"#cc0022":th.a1}`}}>
+        border:`1px solid ${isSat?"#00aaff":isInd?"#cc0022":"rgba(255,20,100,0.4)"}`,
+        boxShadow:`0 0 8px ${isSat?"#00aaff40":isInd?"#cc002240":"#cc002220"}`}}>
+        <span style={{fontSize:9}}>{isSat?"⚡":isInd?"🌑":"🌀"}</span>
+        <span style={{fontSize:8,letterSpacing:3,color:isSat?"#00aaff":isInd?"#cc0022":th.a1,textTransform:"uppercase",fontWeight:700}}>
           {getLabel(strain.sativaRatio)}
         </span>
       </div>
 
-      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(18px,2.2vw,22px)",fontWeight:900,
+      {/* NAME */}
+      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(16px,2vw,22px)",fontWeight:900,
         color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:1.05,
-        marginBottom:14,minHeight:"2.2em",display:"flex",alignItems:"flex-start"}}>
+        marginBottom:10,minHeight:"2.1em",display:"flex",alignItems:"flex-start"}}>
         <span>{isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}</span>
       </div>
 
       {/* RATIO BAR */}
-      <div style={{marginBottom:20}}>
-        <div style={{height:6,borderRadius:3,overflow:"hidden",background:"rgba(255,255,255,0.06)",position:"relative"}}>
+      <div className={`gc-card-ratio-${strain.id}`} style={{marginBottom:14}}>
+        <div style={{height:5,borderRadius:3,overflow:"hidden",background:"rgba(255,255,255,0.06)",position:"relative"}}>
           {isHyb?(
-            // hybrid: split from both ends
             <>
               <div style={{position:"absolute",left:0,top:0,height:"100%",width:strain.sativaRatio+"%",background:`linear-gradient(90deg,#00aaff,#00aaff88)`,boxShadow:`0 0 8px #00aaff`}}/>
               <div style={{position:"absolute",right:0,top:0,height:"100%",width:(100-strain.sativaRatio)+"%",background:`linear-gradient(90deg,#cc002288,#cc0022)`,boxShadow:`0 0 8px #cc0022`}}/>
@@ -823,52 +834,58 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
             <div style={{width:strain.sativaRatio+"%",height:"100%",background:isSat?`linear-gradient(90deg,#00aaff,#00ddff)`:`linear-gradient(90deg,#cc0022,#5500aa)`,boxShadow:`0 0 8px ${th.a1}`}}/>
           )}
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
-          <span style={{fontSize:9,color:isSat?"#00aaff":isInd?"#996060":T.sativa.a1,letterSpacing:1,textShadow:`0 0 6px ${isSat?"#00aaff":"#ff149340"}`}}>⚡ {strain.sativaRatio}% Spark</span>
-          <span style={{fontSize:9,color:isInd?"#cc0022":isSat?"#004466":T.indica.a1,letterSpacing:1,textShadow:`0 0 6px ${isInd?"#cc0022":"#cc002240"}`}}>🌑 {100-strain.sativaRatio}% Deep</span>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+          <span style={{fontSize:8,color:isSat?"#00aaff":isInd?"#996060":T.sativa.a1,letterSpacing:1}}>⚡ {strain.sativaRatio}% Spark</span>
+          <span style={{fontSize:8,color:isInd?"#cc0022":isSat?"#004466":T.indica.a1,letterSpacing:1}}>🌑 {100-strain.sativaRatio}% Deep</span>
         </div>
       </div>
 
       {/* Impact + Ki Energy row */}
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,padding:"10px 12px",background:"rgba(0,0,0,0.2)",borderTop:`1px solid ${th.border}`,borderBottom:`1px solid ${th.border}`}}>
-        <KiEnergy type={strain.type} size={52}/>
+      <div className={`gc-card-ki-${strain.id}`}
+        style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"8px 10px",
+          background:"rgba(0,0,0,0.2)",borderTop:`1px solid ${th.border}`,borderBottom:`1px solid ${th.border}`}}>
+        <KiEnergy type={strain.type} size={44}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:8,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:3}}>Impact</div>
-          <div style={{fontSize:22,fontWeight:900,color:isSat?"#00aaff":isInd?"#CC0022":"#FF1493",fontFamily:"'Inter',sans-serif",textShadow:`0 0 12px ${isSat?"#00aaff80":isInd?"#CC002280":"#FF149380"}`,lineHeight:1}}>{strain.thc}%</div>
-          <div style={{fontSize:8,letterSpacing:1,color:isSat?"#00aaff80":isInd?"#CC002250":"#FF149350",marginTop:2,textTransform:"uppercase"}}>{getLabel(strain.sativaRatio)}</div>
+          <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:2}}>Impact</div>
+          <div style={{fontSize:20,fontWeight:900,color:isSat?"#00aaff":isInd?"#CC0022":"#FF1493",fontFamily:"'Inter',sans-serif",lineHeight:1}}>{strain.thc}%</div>
+          <div style={{fontSize:7,letterSpacing:1,color:isSat?"#00aaff80":isInd?"#CC002250":"#FF149350",marginTop:1,textTransform:"uppercase"}}>{getLabel(strain.sativaRatio)}</div>
         </div>
         <div style={{textAlign:"right",flexShrink:0}}>
-          <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:3}}>Tier</div>
-          <div style={{fontSize:11,color:ts.color,letterSpacing:1,textShadow:`0 0 8px ${ts.color}`}}>{ts.icon} {strain.tier}</div>
+          <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:2}}>Tier</div>
+          <div style={{fontSize:10,color:ts.color,letterSpacing:1,textShadow:`0 0 8px ${ts.color}`}}>{ts.icon} {strain.tier}</div>
         </div>
       </div>
 
-      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:20,flex:1,alignContent:"flex-start"}}>
+      {/* Effects */}
+      <div className={`gc-card-effects-${strain.id}`}
+        style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:14,flex:1,alignContent:"flex-start"}}>
         {strain.effects.map(e=>(
-          <span key={e} style={{fontSize:9,letterSpacing:1,color:th.dim,textTransform:"uppercase",border:`1px solid ${th.border}`,padding:"3px 8px"}}>{e}</span>
+          <span key={e} style={{fontSize:8,letterSpacing:1,color:th.dim,textTransform:"uppercase",border:`1px solid ${th.border}`,padding:"2px 7px"}}>{e}</span>
         ))}
       </div>
 
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:14,borderTop:`1px solid ${th.border}`,marginTop:"auto"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <GMCCoin size={18} theme={{amber:"#e8a020"}}/>
+      {/* BOTTOM ROW — GMC + ADD */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+        paddingTop:12,borderTop:`1px solid ${th.border}`,marginTop:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <GMCCoin size={16} theme={{amber:"#e8a020"}}/>
           <div>
-            <div style={{fontSize:18,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(232,160,32,0.6)",lineHeight:1}}>{strain.gmcCost}</div>
+            <div style={{fontSize:16,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(232,160,32,0.6)",lineHeight:1}}>{strain.gmcCost}</div>
             <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>GMC</div>
           </div>
           {calcDiscount&&calcDiscount(strain,cartQty||1)>0&&(
-            <div style={{fontSize:8,color:"#00ff88",letterSpacing:1,background:"rgba(0,255,136,0.1)",padding:"2px 5px",border:"1px solid rgba(0,255,136,0.25)"}}>
+            <div style={{fontSize:7,color:"#00ff88",letterSpacing:1,background:"rgba(0,255,136,0.1)",padding:"2px 5px",border:"1px solid rgba(0,255,136,0.25)"}}>
               -{calcDiscount(strain,cartQty||1)}%
             </div>
           )}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:5}}>
           {onAddToCart&&(
             <button onClick={e=>{e.stopPropagation();onAddToCart&&onAddToCart();}}
-              style={{display:"flex",alignItems:"center",gap:4,padding:"6px 10px",
+              style={{display:"flex",alignItems:"center",gap:3,padding:"5px 9px",
                 background:cartQty>0?`${th.a1}20`:"transparent",
                 border:`1px solid ${cartQty>0?th.a1:th.border}`,
-                color:cartQty>0?th.a1:th.dim,cursor:"pointer",fontSize:9,fontWeight:700,
+                color:cartQty>0?th.a1:th.dim,cursor:"pointer",fontSize:8,fontWeight:700,
                 letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",
                 transition:"all 0.15s",boxShadow:cartQty>0?`0 0 8px ${th.a1}30`:"none"}}
               onMouseEnter={e=>{e.currentTarget.style.borderColor=th.a1;e.currentTarget.style.color=th.a1;}}
@@ -876,12 +893,13 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
               {cartQty>0?`◈ ${cartQty}g`:"+ Add"}
             </button>
           )}
-          <span style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>{strain.stock} bits</span>
+          <span style={{fontSize:8,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>{strain.stock} bits</span>
         </div>
       </div>
       </div>{/* end card body */}
 
     </div>
+    </>
   );
 }
 
@@ -927,7 +945,7 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
                   <div style={{fontSize:9,letterSpacing:3,color:th.dim,textTransform:"uppercase"}}>{items.length} Active Batches</div>
                 </div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:3}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,320px),1fr))",gap:3}}>
                 {items.map(s=><StrainCard key={s.id} strain={s} t={t} onView={onView} onAddToCart={()=>setSheetStrain(s)} cartQty={(cart||[]).find(i=>i.strainId===s.id)?.qty||0} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings}/>)}
               </div>
             </div>
@@ -944,7 +962,7 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
                 </div>
               </div>
             )}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:3}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,320px),1fr))",gap:3}}>
               {filtered.map(s=><StrainCard key={s.id} strain={s} t={t} onView={onView} onAddToCart={()=>setSheetStrain(s)} cartQty={(cart||[]).find(i=>i.strainId===s.id)?.qty||0} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings}/>)}
             </div>
           </div>
@@ -1428,7 +1446,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </h2>
           <GBtn onClick={onShelf} color={th.border} outline>{t.visitShelf} →</GBtn>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:3}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,320px),1fr))",gap:3}}>
           {featuredStrains.map(s=>(
             <StrainCard key={s.id} strain={s} t={t}
               onView={onView||(()=>{})}
