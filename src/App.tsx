@@ -246,9 +246,15 @@ function getLabel(r){
 function GlobalParticles(){
   const ref=useRef(null);
   const anim=useRef(null);
+  const lastFrame=useRef(0);
   useEffect(()=>{
     const c=ref.current; if(!c) return;
     const ctx=c.getContext("2d");
+    const isMobile=window.innerWidth<=768;
+    // Mobile: 12 particles, no shadowBlur, slower. Desktop: 30 particles, light glow.
+    const COUNT=isMobile?12:30;
+    const FPS=isMobile?20:30; // throttle frame rate
+    const INTERVAL=1000/FPS;
     let W,H;
     function resize(){
       W=c.width=window.innerWidth;
@@ -256,44 +262,39 @@ function GlobalParticles(){
     }
     resize();
     window.addEventListener("resize",resize);
-
-    // 45 mixed particles — base arcane theme
-    const COUNT=45;
     const COLS=["#00d4ff","#7b2fff","#00d4ff88","#7b2fff88","#e8a02060"];
     const ps=Array.from({length:COUNT},(_,i)=>({
       x:Math.random()*window.innerWidth,
       y:Math.random()*window.innerHeight,
-      vx:(Math.random()-0.5)*0.4,
-      vy:-Math.random()*0.35-0.05,
-      r:Math.random()*2.5+0.5,
+      vx:(Math.random()-0.5)*0.3,
+      vy:-Math.random()*0.25-0.04,
+      r:Math.random()*2+0.5,
       op:Math.random(),
       opDir:Math.random()>0.5?1:-1,
       col:COLS[i%COLS.length],
-      life:Math.random()*200,
     }));
-
-    function draw(){
+    function draw(ts){
+      anim.current=requestAnimationFrame(draw);
+      if(ts-lastFrame.current<INTERVAL) return; // throttle
+      lastFrame.current=ts;
       ctx.clearRect(0,0,W,H);
       ps.forEach(p=>{
         p.x+=p.vx; p.y+=p.vy;
-        p.op+=p.opDir*0.006;
+        p.op+=p.opDir*0.008;
         if(p.op>=1||p.op<=0) p.opDir*=-1;
         if(p.x<0)p.x=W; if(p.x>W)p.x=0;
-        if(p.y<0)p.y=H; if(p.y>H){ p.y=H; p.vy=-Math.abs(p.vy); }
-        p.life++;
+        if(p.y<0)p.y=H; if(p.y>H){p.y=H;p.vy=-Math.abs(p.vy);}
         ctx.save();
-        ctx.globalAlpha=Math.max(0,Math.min(1,p.op))*0.65;
-        ctx.shadowBlur=10;
-        ctx.shadowColor=p.col;
+        ctx.globalAlpha=Math.max(0,Math.min(1,p.op))*0.6;
+        if(!isMobile){ctx.shadowBlur=6;ctx.shadowColor=p.col;} // skip shadowBlur on mobile
         ctx.fillStyle=p.col;
         ctx.beginPath();
         ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
         ctx.fill();
         ctx.restore();
       });
-      anim.current=requestAnimationFrame(draw);
     }
-    draw();
+    anim.current=requestAnimationFrame(draw);
     return()=>{ cancelAnimationFrame(anim.current); window.removeEventListener("resize",resize); };
   },[]);
   return <canvas ref={ref} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0}}/>;
@@ -302,16 +303,23 @@ function GlobalParticles(){
 function Particles(){return null;}
 
 // ── GLITCH TEXT (Sativa only) ──
-// Spark (Sativa) — cyan glitch flicker
+// Spark (Sativa) — cyan glitch flicker, only runs when visible
 function GlitchText({text,active}){
   const [g,setG]=useState(false);
+  const ref=useRef(null);
+  const visible=useRef(false);
   useEffect(()=>{
     if(!active) return;
-    const iv=setInterval(()=>{ setG(true); setTimeout(()=>setG(false),120); },2500+Math.random()*2000);
-    return()=>clearInterval(iv);
+    const obs=new IntersectionObserver(([e])=>{ visible.current=e.isIntersecting; },{threshold:0});
+    if(ref.current) obs.observe(ref.current);
+    const iv=setInterval(()=>{
+      if(!visible.current) return;
+      setG(true); setTimeout(()=>setG(false),120);
+    },2500+Math.random()*2000);
+    return()=>{ clearInterval(iv); obs.disconnect(); };
   },[active]);
   return(
-    <span style={{position:"relative",display:"inline-block"}}>
+    <span ref={ref} style={{position:"relative",display:"inline-block"}}>
       {text}
       {g&&<>
         <span style={{position:"absolute",top:0,left:3,color:"#00aaff",opacity:0.9,clipPath:"polygon(0 15%,100% 15%,100% 35%,0 35%)"}}>{text}</span>
@@ -321,19 +329,25 @@ function GlitchText({text,active}){
   );
 }
 
-// Deep (Indica) — slow crimson pulse, heavy dark energy
+// Deep (Indica) — slow crimson pulse, only runs when visible
 function PulseText({text,active}){
   const [p,setP]=useState(false);
+  const ref=useRef(null);
+  const visible=useRef(false);
   useEffect(()=>{
     if(!active) return;
-    const iv=setInterval(()=>{ setP(true); setTimeout(()=>setP(false),400); },3000+Math.random()*2000);
-    return()=>clearInterval(iv);
+    const obs=new IntersectionObserver(([e])=>{ visible.current=e.isIntersecting; },{threshold:0});
+    if(ref.current) obs.observe(ref.current);
+    const iv=setInterval(()=>{
+      if(!visible.current) return;
+      setP(true); setTimeout(()=>setP(false),400);
+    },3000+Math.random()*2000);
+    return()=>{ clearInterval(iv); obs.disconnect(); };
   },[active]);
   return(
-    <span style={{position:"relative",display:"inline-block",
+    <span ref={ref} style={{position:"relative",display:"inline-block",
       textShadow:p?"0 0 20px #cc0022, 0 0 40px #cc002280, 0 0 2px #ff4444":"0 0 8px #cc002240",
-      transition:"text-shadow 0.3s ease",
-      color:p?"#ff4444":undefined}}>
+      transition:"text-shadow 0.3s ease",color:p?"#ff4444":undefined}}>
       {text}
       {p&&<>
         <span style={{position:"absolute",top:0,left:2,color:"#cc0022",opacity:0.6,clipPath:"polygon(0 20%,100% 20%,100% 45%,0 45%)",filter:"blur(1px)"}}>{text}</span>
@@ -343,21 +357,26 @@ function PulseText({text,active}){
   );
 }
 
-// Flux (Hybrid) — unstable color shift between cyan and crimson
+// Flux (Hybrid) — unstable color shift, only runs when visible
 function FluxText({text,active}){
-  const [f,setF]=useState(0); // 0=normal 1=cyan-shift 2=crimson-shift
+  const [f,setF]=useState(0);
+  const ref=useRef(null);
+  const visible=useRef(false);
   useEffect(()=>{
     if(!active) return;
+    const obs=new IntersectionObserver(([e])=>{ visible.current=e.isIntersecting; },{threshold:0});
+    if(ref.current) obs.observe(ref.current);
     const iv=setInterval(()=>{
+      if(!visible.current) return;
       const r=Math.random();
       if(r<0.4){ setF(1); setTimeout(()=>setF(0),100); }
       else if(r<0.7){ setF(2); setTimeout(()=>setF(0),150); }
       else { setF(1); setTimeout(()=>{ setF(2); setTimeout(()=>setF(0),100); },90); }
     },1800+Math.random()*1500);
-    return()=>clearInterval(iv);
+    return()=>{ clearInterval(iv); obs.disconnect(); };
   },[active]);
   return(
-    <span style={{position:"relative",display:"inline-block"}}>
+    <span ref={ref} style={{position:"relative",display:"inline-block"}}>
       {text}
       {f===1&&<>
         <span style={{position:"absolute",top:0,left:3,color:"#00aaff",opacity:0.8,clipPath:"polygon(0 10%,100% 10%,100% 40%,0 40%)"}}>{text}</span>
@@ -375,7 +394,8 @@ function FluxText({text,active}){
 function GMCCoin({size=24,theme}){
   const [rot,setRot]=useState(0);
   useEffect(()=>{
-    const iv=setInterval(()=>setRot(r=>(r+2)%360),30);
+    // 80ms instead of 30ms — 3x less CPU, still looks smooth
+    const iv=setInterval(()=>setRot(r=>(r+5)%360),80);
     return()=>clearInterval(iv);
   },[]);
   const squish=Math.abs(Math.cos(rot*Math.PI/180));
@@ -579,8 +599,8 @@ function BudPlaceholder({color1,color2,size=220}){
 function KiEnergy({type,size=60}){
   const isSpark=type==="Sativa"||type==="Sativa Hybrid";
   const isDeep=type==="Indica"||type==="Indica Hybrid";
-  // Spark=electric yellow/blue, Deep=dark red/purple, Flux=pink/mixed
-  const uid="ki"+Math.random().toString(36).slice(2,8);
+  // Stable uid — useRef so it doesn't regenerate on every render
+  const uid=useRef("ki"+Math.random().toString(36).slice(2,8)).current;
   if(isSpark) return(
     <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
@@ -652,7 +672,7 @@ function SpinningBud({strain,size=200}){
   const isInd=strain.type==="Indica"||strain.type==="Indica Hybrid";
   const glowColor=isSat?"#FFD700":isInd?"#CC0022":"#FF1493";
   const photos=[strain.media,strain.media2,strain.media3].filter(Boolean);
-  const uid="spin"+Math.random().toString(36).slice(2,7);
+  const uid=useRef("spin"+Math.random().toString(36).slice(2,7)).current;
 
   useEffect(()=>{
     if(photos.length<=1) return;
