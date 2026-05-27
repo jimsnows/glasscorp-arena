@@ -302,6 +302,7 @@ function GlobalParticles(){
 function Particles(){return null;}
 
 // ── GLITCH TEXT (Sativa only) ──
+// Spark (Sativa) — cyan glitch flicker
 function GlitchText({text,active}){
   const [g,setG]=useState(false);
   useEffect(()=>{
@@ -315,6 +316,56 @@ function GlitchText({text,active}){
       {g&&<>
         <span style={{position:"absolute",top:0,left:3,color:"#00aaff",opacity:0.9,clipPath:"polygon(0 15%,100% 15%,100% 35%,0 35%)"}}>{text}</span>
         <span style={{position:"absolute",top:0,left:-3,color:"#00ffff",opacity:0.9,clipPath:"polygon(0 55%,100% 55%,100% 75%,0 75%)"}}>{text}</span>
+      </>}
+    </span>
+  );
+}
+
+// Deep (Indica) — slow crimson pulse, heavy dark energy
+function PulseText({text,active}){
+  const [p,setP]=useState(false);
+  useEffect(()=>{
+    if(!active) return;
+    const iv=setInterval(()=>{ setP(true); setTimeout(()=>setP(false),400); },3000+Math.random()*2000);
+    return()=>clearInterval(iv);
+  },[active]);
+  return(
+    <span style={{position:"relative",display:"inline-block",
+      textShadow:p?"0 0 20px #cc0022, 0 0 40px #cc002280, 0 0 2px #ff4444":"0 0 8px #cc002240",
+      transition:"text-shadow 0.3s ease",
+      color:p?"#ff4444":undefined}}>
+      {text}
+      {p&&<>
+        <span style={{position:"absolute",top:0,left:2,color:"#cc0022",opacity:0.6,clipPath:"polygon(0 20%,100% 20%,100% 45%,0 45%)",filter:"blur(1px)"}}>{text}</span>
+        <span style={{position:"absolute",top:0,left:-2,color:"#5500aa",opacity:0.5,clipPath:"polygon(0 60%,100% 60%,100% 80%,0 80%)",filter:"blur(0.5px)"}}>{text}</span>
+      </>}
+    </span>
+  );
+}
+
+// Flux (Hybrid) — unstable color shift between cyan and crimson
+function FluxText({text,active}){
+  const [f,setF]=useState(0); // 0=normal 1=cyan-shift 2=crimson-shift
+  useEffect(()=>{
+    if(!active) return;
+    const iv=setInterval(()=>{
+      const r=Math.random();
+      if(r<0.4){ setF(1); setTimeout(()=>setF(0),100); }
+      else if(r<0.7){ setF(2); setTimeout(()=>setF(0),150); }
+      else { setF(1); setTimeout(()=>{ setF(2); setTimeout(()=>setF(0),100); },90); }
+    },1800+Math.random()*1500);
+    return()=>clearInterval(iv);
+  },[active]);
+  return(
+    <span style={{position:"relative",display:"inline-block"}}>
+      {text}
+      {f===1&&<>
+        <span style={{position:"absolute",top:0,left:3,color:"#00aaff",opacity:0.8,clipPath:"polygon(0 10%,100% 10%,100% 40%,0 40%)"}}>{text}</span>
+        <span style={{position:"absolute",top:0,left:-2,color:"#ff1493",opacity:0.6,clipPath:"polygon(0 60%,100% 60%,100% 85%,0 85%)"}}>{text}</span>
+      </>}
+      {f===2&&<>
+        <span style={{position:"absolute",top:0,left:-3,color:"#cc0022",opacity:0.8,clipPath:"polygon(0 15%,100% 15%,100% 45%,0 45%)"}}>{text}</span>
+        <span style={{position:"absolute",top:0,left:2,color:"#00ddff",opacity:0.6,clipPath:"polygon(0 55%,100% 55%,100% 80%,0 80%)"}}>{text}</span>
       </>}
     </span>
   );
@@ -690,54 +741,70 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
   const glowColor=isSat?"#00aaff":isInd?"#cc0022":th.a1;
   const glowColor2=isSat?"#00ddff":isInd?"#5500aa":"#cc0022";
 
+  // blurred bg source — real img url or null (for bud placeholder we use a CSS trick)
+  const hasBgMedia = !!strain.media;
+
   return(
     <div onClick={()=>onView(strain)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{background:cardBg,border:`1px solid ${hov?th.a1:th.border}`,cursor:"pointer",position:"relative",overflow:"hidden",transition:"all 0.3s",
-        boxShadow:hov?`0 0 30px ${th.a1}40,0 0 60px ${th.a1}10`:`0 0 10px ${th.border}`}}>
+        boxShadow:hov?`0 0 30px ${th.a1}40,0 0 60px ${th.a1}10`:`0 0 10px ${th.border}`,
+        display:"flex",flexDirection:"column"}}>
 
-      {/* ── HERO MEDIA ── */}
+      {/* ── HERO MEDIA — sharp, clear top area ── */}
       <div style={{position:"relative",width:"100%",height:210,overflow:"hidden",background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
         {strain.media?(
           <img src={strain.media} alt={strain.name}
             style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",display:"block",transition:"transform 0.4s",transform:hov?"scale(1.04)":"scale(1)"}}/>
         ):(
           <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-            {/* ambient glow behind bud */}
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:160,height:160,borderRadius:"50%",background:`radial-gradient(circle,${glowColor}20 0%,transparent 70%)`,pointerEvents:"none"}}/>
             <BudPlaceholder color1={glowColor} color2={glowColor2} size={180}/>
           </div>
         )}
-        {/* bottom fade into card */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:60,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
+        {/* bottom fade into blurred bg section */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
         {/* top glow line */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,
           background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022)`,
           opacity:hov?1:0.7,transition:"opacity 0.3s",boxShadow:isSat?`0 0 10px #00aaff`:isInd?`0 0 10px #cc0022`:`0 0 10px #ff1493`}}/>
-        {/* tag badge over image */}
+        {/* tag badge */}
         {strain.tag&&<div style={{position:"absolute",top:10,right:10,fontSize:8,letterSpacing:2,color:th.a1,background:`${th.bgDeep}dd`,padding:"3px 8px",textTransform:"uppercase",border:`1px solid ${th.a1}40`,backdropFilter:"blur(4px)"}}>{strain.tag}</div>}
-        {/* type watermark */}
-        <div style={{position:"absolute",bottom:8,right:10,fontSize:32,opacity:strain.media?0.15:0.07,userSelect:"none",pointerEvents:"none"}}>{isSat?"⚡":isInd?"🌑":"🌀"}</div>
       </div>
 
       {/* ── CARD BODY ── */}
-      <div style={{padding:"18px 20px 20px"}}>
+      <div style={{padding:"18px 20px 20px",display:"flex",flexDirection:"column",flex:1,position:"relative",overflow:"hidden"}}>
 
-      {/* PROMO BADGE with lightning shimmer */}
+        {/* Subtle blurred bg — only behind badge+name area, very understated */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:130,overflow:"hidden",zIndex:0,pointerEvents:"none"}}>
+          {strain.media?(
+            <img src={strain.media} alt="" aria-hidden
+              style={{width:"100%",height:"200%",objectFit:"cover",objectPosition:"center top",display:"block",
+                filter:"blur(24px) brightness(0.22) saturate(1.4)",transform:"scale(1.2)"}}/>
+          ):(
+            <div style={{width:"100%",height:"100%",
+              background:`radial-gradient(ellipse at 50% 0%,${glowColor}18 0%,transparent 70%)`}}/>
+          )}
+          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)"}}/>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:50,
+            background:`linear-gradient(transparent,${cardBg})`}}/>
+        </div>
+
+      {/* PROMO BADGE */}
       {strain.promo?.active&&strain.promo.label&&(
         <div style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",
           background:"linear-gradient(90deg,rgba(255,200,0,0.15),rgba(255,160,0,0.08),rgba(255,200,0,0.15))",
           border:"1px solid rgba(255,180,0,0.5)",
           backgroundSize:"200% 100%",
           animation:"promoShimmer 2s linear infinite",
-          position:"relative",overflow:"hidden"}}>
+          position:"relative",overflow:"hidden",zIndex:1}}>
           <style>{`@keyframes promoShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
           <span style={{fontSize:9,color:"#ffc800",fontWeight:900,letterSpacing:2,textTransform:"uppercase",textShadow:"0 0 8px rgba(255,200,0,0.8)"}}>⚡ {strain.promo.label}</span>
           {strain.promo.discount>0&&<span style={{fontSize:8,color:"#ffaa00",letterSpacing:1}}>−{strain.promo.discount}%</span>}
         </div>
       )}
 
-      {/* TYPE BADGE */}
-      <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:10,padding:"4px 12px",
+      {/* TYPE BADGE — compact, no stretch */}
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:10,padding:"4px 12px",position:"relative",zIndex:1,alignSelf:"flex-start",
         background:isSat?`linear-gradient(90deg,#00aaff30,#00ddff20)`:isInd?`linear-gradient(90deg,#cc002230,#5500aa20)`:`linear-gradient(90deg,#ff149320,#cc002220)`,
         border:`1px solid ${isSat?"#00aaff":isInd?"#cc0022":"rgba(255,20,100,0.4)"}`,boxShadow:`0 0 8px ${isSat?"#00aaff40":isInd?"#cc002240":"#cc002220"}`}}>
         <span style={{fontSize:10}}>{isSat?"⚡":isInd?"🌑":"🌀"}</span>
@@ -746,12 +813,12 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
         </span>
       </div>
 
-      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,marginBottom:20}}>
-        {isSat?<GlitchText text={strain.name} active={true}/>:strain.name}
+      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,marginBottom:20,position:"relative",zIndex:1}}>
+        {isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}
       </div>
 
       {/* RATIO BAR — visually distinct */}
-      <div style={{marginBottom:20}}>
+      <div style={{marginBottom:20,position:"relative",zIndex:1}}>
         <div style={{height:6,borderRadius:3,overflow:"hidden",background:"rgba(255,255,255,0.06)",position:"relative"}}>
           {isHyb?(
             // hybrid: split from both ends
@@ -783,13 +850,13 @@ function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartIt
         </div>
       </div>
 
-      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:20}}>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:20,flex:1,alignContent:"flex-start"}}>
         {strain.effects.map(e=>(
           <span key={e} style={{fontSize:9,letterSpacing:1,color:th.dim,textTransform:"uppercase",border:`1px solid ${th.border}`,padding:"3px 8px"}}>{e}</span>
         ))}
       </div>
 
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:14,borderTop:`1px solid ${th.border}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:14,borderTop:`1px solid ${th.border}`,marginTop:"auto"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <GMCCoin size={18} theme={{amber:"#e8a020"}}/>
           <div>
@@ -938,13 +1005,34 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
           ← {t.backToShelf}
         </button>
 
-        {/* ── HERO MEDIA — static full width ── */}
+        {/* ── HERO MEDIA — full bleed, responsive ── */}
         {strain.media&&(
-          <div style={{width:"100%",maxHeight:420,overflow:"hidden",marginBottom:40,position:"relative"}}>
+          <div style={{
+            width:"calc(100% + 10vw)",
+            marginLeft:"-5vw",
+            marginBottom:48,
+            position:"relative",
+            overflow:"hidden",
+            maxHeight:"clamp(260px,45vw,560px)",
+            minHeight:220
+          }}>
             <img src={strain.media} alt={strain.name}
-              style={{width:"100%",maxHeight:420,objectFit:"cover",objectPosition:"center",display:"block"}}/>
-            <div style={{position:"absolute",bottom:0,left:0,right:0,height:120,background:`linear-gradient(transparent,${th.bgDeep})`,pointerEvents:"none"}}/>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:isSat?`linear-gradient(90deg,#00aaff,#00ddff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa)`:`linear-gradient(90deg,#ff1493,#cc0022)`,boxShadow:isSat?`0 0 15px #00aaff`:isInd?`0 0 15px #cc0022`:`0 0 15px #ff1493`}}/>
+              style={{
+                width:"100%",
+                height:"clamp(260px,45vw,560px)",
+                objectFit:"cover",
+                objectPosition:"center top",
+                display:"block"
+              }}/>
+            {/* bottom fade */}
+            <div style={{position:"absolute",bottom:0,left:0,right:0,height:"40%",background:`linear-gradient(transparent,${th.bgDeep})`,pointerEvents:"none"}}/>
+            {/* left/right fade for bleed effect */}
+            <div style={{position:"absolute",top:0,left:0,bottom:0,width:40,background:`linear-gradient(90deg,${th.bgDeep},transparent)`,pointerEvents:"none"}}/>
+            <div style={{position:"absolute",top:0,right:0,bottom:0,width:40,background:`linear-gradient(270deg,${th.bgDeep},transparent)`,pointerEvents:"none"}}/>
+            {/* top color line */}
+            <div style={{position:"absolute",top:0,left:0,right:0,height:3,
+              background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022,#ff1493)`,
+              boxShadow:isSat?`0 0 15px #00aaff80`:isInd?`0 0 15px #cc002280`:`0 0 15px #ff149380`}}/>
           </div>
         )}
 
@@ -963,7 +1051,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
             </div>
 
             <h1 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:th.text,margin:"0 0 28px",textTransform:"uppercase",lineHeight:0.9,textShadow:`0 0 40px ${th.a1}20`}}>
-              {isSat?<GlitchText text={strain.name} active={true}/>:strain.name}
+              {isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}
             </h1>
 
             {/* dramatic ratio bar */}
