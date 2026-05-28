@@ -1291,7 +1291,10 @@ function GardenSection({t,onRedeem,onShelf,strains}){
   const currentStrain=allStrains.length>0?allStrains[tick%allStrains.length]:null;
 
   return(
-    <section style={{padding:"80px 5vw 100px",background:"#05040f",position:"relative",overflow:"hidden",borderTop:"1px solid rgba(0,212,255,0.12)",borderBottom:"1px solid rgba(0,212,255,0.12)"}}>
+    <section style={{padding:"80px 5vw 100px",background:"#05040f",position:"relative",overflow:"hidden",borderTop:"1px solid rgba(123,47,255,0.2)",borderBottom:"1px solid rgba(123,47,255,0.2)"}}>
+      {/* AZRON's deepest chamber — ancient purple void */}
+      <div style={{position:"absolute",top:"-20%",left:"50%",transform:"translateX(-50%)",width:"80vw",height:"80vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.1) 0%,rgba(123,47,255,0.04) 40%,transparent 70%)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:"-10%",right:"10%",width:"30vw",height:"30vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.04) 0%,transparent 65%)",pointerEvents:"none"}}/>
       <style>{`
         @keyframes vaultPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.15),0 0 60px rgba(0,212,255,0.08)}50%{box-shadow:0 0 0 16px rgba(0,212,255,0),0 0 100px rgba(0,212,255,0.2)}}
         @keyframes boltSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -1504,7 +1507,15 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
     ?featuredIds.map(id=>allStrains.find(s=>s.id===id)).filter(Boolean)
     :allStrains.slice(0,3);
   return(
-    <div>
+    <div style={{position:"relative"}}>
+      {/* PAGE-WIDE AZRON AURA — ultra subtle data stream lines */}
+      <style>{`
+        @keyframes azron-data{0%{transform:translateY(-100%)}100%{transform:translateY(200vh)}}
+        @keyframes azron-data2{0%{transform:translateY(-100%)}100%{transform:translateY(200vh)}}
+      `}</style>
+      {/* vertical data stream lines — ancient scripture feel */}
+      <div style={{position:"fixed",top:0,left:"3vw",width:1,height:"100vh",background:"linear-gradient(transparent,rgba(123,47,255,0.06),transparent)",animation:"azron-data 15s linear infinite",pointerEvents:"none",zIndex:0}}/>
+      <div style={{position:"fixed",top:0,right:"3vw",width:1,height:"100vh",background:"linear-gradient(transparent,rgba(232,160,32,0.04),transparent)",animation:"azron-data2 20s linear infinite 5s",pointerEvents:"none",zIndex:0}}/>
       {/* HERO */}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",backgroundColor:th.bgDeep}}>
         {/* AZRON — cover + right anchored, works all screen sizes */}
@@ -1561,9 +1572,21 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         </div>
       </div>
 
-      {/* FEATURED */}
-      <section style={{padding:"100px 5vw",background:th.bg}}>
-        <div style={{fontSize:10,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.a1}`}}>— New Arrivals</div>
+      {/* FEATURED — AZRON's outer chamber, purple gold atmosphere */}
+      <section style={{padding:"100px 5vw",background:th.bg,position:"relative",overflow:"hidden"}}>
+        {/* AZRON atmosphere — purple glow bleeding from top right */}
+        <div style={{position:"absolute",top:"-20%",right:"-10%",width:"60vw",height:"60vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.07) 0%,transparent 65%)",pointerEvents:"none"}}/>
+        {/* gold glow bottom left — ancient torchlight */}
+        <div style={{position:"absolute",bottom:"-10%",left:"5%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.05) 0%,transparent 65%)",pointerEvents:"none"}}/>
+        {/* ultra subtle scanline */}
+        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(123,47,255,0.015) 1px,transparent 1px)",backgroundSize:"100% 3px",pointerEvents:"none"}}/>
+        <div style={{position:"relative",zIndex:1}}>
+        {/* ancient inscription label */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+          <div style={{width:40,height:1,background:`linear-gradient(90deg,transparent,${th.a2})`,boxShadow:`0 0 6px ${th.a2}60`}}/>
+          <span style={{fontSize:9,letterSpacing:5,color:th.a2,textTransform:"uppercase",textShadow:`0 0 8px ${th.a2}`}}>✦ AZRON's Chamber · New Arrivals ✦</span>
+          <div style={{width:40,height:1,background:`linear-gradient(90deg,${th.a2},transparent)`,boxShadow:`0 0 6px ${th.a2}60`}}/>
+        </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:48,flexWrap:"wrap",gap:16}}>
           <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(32px,6vw,72px)",fontWeight:900,letterSpacing:"-0.02em",color:th.text,margin:0,textTransform:"uppercase",lineHeight:0.9}}>
             Featured<br/><span style={{color:th.a2,textShadow:`0 0 20px ${th.a2}`}}>Batches</span>
@@ -1592,14 +1615,22 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
             />
           )}
         </div>
+        </div>{/* end zIndex:1 */}
       </section>
 
       {/* THE GARDEN */}
       <GardenSection t={t} onRedeem={onRedeem} onShelf={onShelf} strains={allStrains}/>
 
-      {/* GMC INFO */}
+      {/* GMC INFO — AZRON's sacred treasury */}
       <section style={{padding:"100px 5vw",background:th.bgDeep,position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"80vw",height:"60vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}06 0%,transparent 60%)`,pointerEvents:"none"}}/>
+        {/* top border — ancient temple divider */}
+        <div style={{position:"absolute",top:0,left:"5vw",right:"5vw",height:1,background:`linear-gradient(90deg,transparent,${th.a2}60,${th.amber}60,${th.a2}60,transparent)`}}/>
+        {/* AZRON treasury atmosphere — deep purple + gold */}
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"80vw",height:"60vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}08 0%,transparent 60%)`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:"30%",right:"10%",width:"35vw",height:"35vw",borderRadius:"50%",background:`radial-gradient(circle,rgba(232,160,32,0.06) 0%,transparent 65%)`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:"10%",left:"5%",width:"25vw",height:"25vw",borderRadius:"50%",background:`radial-gradient(circle,rgba(123,47,255,0.08) 0%,transparent 65%)`,pointerEvents:"none"}}/>
+        {/* scanline texture */}
+        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(123,47,255,0.02) 1px,transparent 1px)",backgroundSize:"100% 4px",pointerEvents:"none"}}/>
         <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,380px),1fr))",gap:"6vw",alignItems:"center"}}>
           <div>
             <div style={{fontSize:10,letterSpacing:5,color:th.amber,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.amber}`}}>— The Token</div>
