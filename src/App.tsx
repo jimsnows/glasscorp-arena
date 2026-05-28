@@ -204,7 +204,7 @@ function dbToMember(row){
 const T = {
   base: {
     bg:"#0d0a1a", bgCard:"#13102a", bgDeep:"#080612",
-    a1:"#00d4ff", a2:"#7b2fff", amber:"#e8a020",
+    a1:"#00d4ff", a2:"#7b2fff", amber:"#c8922a",
     text:"#e8e0f0", dim:"#7a7090", border:"rgba(123,47,255,0.3)",
     glow1:"#00d4ff", glow2:"#7b2fff", name:"base"
   },
@@ -224,7 +224,7 @@ const T = {
   },
   hybrid: {
     bg:"#0a0010", bgCard:"#160015", bgDeep:"#060008",
-    a1:"#ff1493", a2:"#cc0022", amber:"#e8a020",
+    a1:"#ff1493", a2:"#cc0022", amber:"#c8922a",
     text:"#fff0f8", dim:"#997080", border:"rgba(200,0,100,0.4)",
     glow1:"#ff1493", glow2:"#cc0022", name:"hybrid",
     particle:"both"
@@ -457,8 +457,8 @@ const STRAINS=[
   {id:8,name:"Wedding Cake",type:"Hybrid",sativaRatio:60,thc:24,cbd:0.1,effects:["Relaxed","Happy","Euphoric"],desc:"Rich tangy flavors. Relaxing and euphoric effects that calm the body.",gmcCost:500,stock:7,tier:"PREMIUM",tag:""},
 ];
 const TIERS=["EXOTIC","PREMIUM","TOP"];
-const TIER_S={"EXOTIC":{color:"#e8a020",glow:"rgba(232,160,32,0.3)",icon:"💎"},"PREMIUM":{color:"#7b2fff",glow:"rgba(123,47,255,0.3)",icon:"🔮"},"TOP":{color:"#00d4ff",glow:"rgba(0,212,255,0.3)",icon:"⚡"}};
-const RANKS=[{name:"Seed",min:0,color:"#7a7090",icon:"🌱"},{name:"Sprout",min:500,color:"#00d4ff",icon:"🌿"},{name:"Grower",min:2000,color:"#7b2fff",icon:"🌳"},{name:"Cultivator",min:5000,color:"#e8a020",icon:"⚗️"},{name:"Master",min:10000,color:"#ff1493",icon:"👑"}];
+const TIER_S={"EXOTIC":{color:"#c8922a",glow:"rgba(232,160,32,0.3)",icon:"💎"},"PREMIUM":{color:"#7b2fff",glow:"rgba(123,47,255,0.3)",icon:"🔮"},"TOP":{color:"#00d4ff",glow:"rgba(0,212,255,0.3)",icon:"⚡"}};
+const RANKS=[{name:"Seed",min:0,color:"#7a7090",icon:"🌱"},{name:"Sprout",min:500,color:"#00d4ff",icon:"🌿"},{name:"Grower",min:2000,color:"#7b2fff",icon:"🌳"},{name:"Cultivator",min:5000,color:"#c8922a",icon:"⚗️"},{name:"Master",min:10000,color:"#ff1493",icon:"👑"}];
 function getRank(s){return[...RANKS].reverse().find(r=>s>=r.min)||RANKS[0];}
 const COUNTRY_CODES=[
   {code:"+66",flag:"🇹🇭",name:"Thailand"},
@@ -965,9 +965,9 @@ const StrainCard=React.memo(function StrainCard({strain,t,onView,onAddToCart,car
           style={{display:"flex",justifyContent:"space-between",alignItems:"center",
             paddingTop:12,borderTop:`1px solid ${th.border}`,marginTop:"auto"}}>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <GMCCoin size={16} theme={{amber:"#e8a020"}}/>
+            <GMCCoin size={16} theme={{amber:"#c8922a"}}/>
             <div>
-              <div className="gc-gmc" style={{fontSize:17,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(232,160,32,0.6)",lineHeight:1}}>{strain.gmcCost}</div>
+              <div className="gc-gmc" style={{fontSize:17,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(200,146,42,0.6)",lineHeight:1}}>{strain.gmcCost}</div>
               <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>GMC</div>
             </div>
             {calcDiscount&&calcDiscount(strain,cartQty||1)>0&&(
@@ -1211,7 +1211,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
               </div>
               <div style={{background:th.bgCard,border:`1px solid ${th.border}`,padding:"18px 14px"}}>
                 <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:6}}>GMC</div>
-                <div style={{fontSize:"clamp(18px,2.5vw,28px)",fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(232,160,32,0.6)"}}>{strain.gmcCost}</div>
+                <div style={{fontSize:"clamp(18px,2.5vw,28px)",fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(200,146,42,0.6)"}}>{strain.gmcCost}</div>
               </div>
             </div>
 
@@ -1242,7 +1242,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginBottom:20}}>
               <div style={{background:"rgba(0,0,0,0.3)",padding:"14px",border:`1px solid ${th.border}`}}>
                 <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:6}}>{t.total}</div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={18} theme={{amber:"#e8a020"}}/><span style={{fontSize:22,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px #e8a02060"}}>{total.toLocaleString()}</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={18} theme={{amber:"#c8922a"}}/><span style={{fontSize:22,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px #e8a02060"}}>{total.toLocaleString()}</span></div>
               </div>
               <div style={{background:"rgba(0,0,0,0.3)",padding:"14px",border:`1px solid ${th.border}`}}>
                 <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:6}}>{t.stock}</div>
@@ -1263,7 +1263,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
               <>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:14,padding:"10px 12px",background:"rgba(0,0,0,0.3)",border:`1px solid ${th.border}`}}>
                   <span style={{fontSize:10,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>Your Vault</span>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={14} theme={{amber:"#e8a020"}}/><span style={{fontSize:14,fontWeight:900,color:canClaim?th.a1:"#cc2244",fontFamily:"'Inter',sans-serif"}}>{(user.gmcBalance||0).toLocaleString()}</span></div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={14} theme={{amber:"#c8922a"}}/><span style={{fontSize:14,fontWeight:900,color:canClaim?th.a1:"#cc2244",fontFamily:"'Inter',sans-serif"}}>{(user.gmcBalance||0).toLocaleString()}</span></div>
                 </div>
                 <GBtn onClick={()=>canClaim&&onClaim(strain,qty)} color={canClaim?th.a1:"#444"} style={{width:"100%",cursor:canClaim?"pointer":"not-allowed",opacity:canClaim?1:0.4}}>
                   {canClaim?`${t.claimNow} — ${total.toLocaleString()} GMC`:"Insufficient GMC"}
@@ -1311,10 +1311,10 @@ function GardenSection({t,onRedeem,onShelf,strains}){
       {/* deep cave atmosphere — purple void from center */}
       <div style={{position:"absolute",top:"20%",left:"50%",transform:"translateX(-50%)",width:"90vw",height:"70vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.12) 0%,rgba(123,47,255,0.05) 35%,transparent 65%)",pointerEvents:"none"}}/>
       {/* gold torch glows — left and right pillars */}
-      <div style={{position:"absolute",top:"15%",left:"3%",width:4,height:"60%",background:"linear-gradient(180deg,transparent,rgba(232,160,32,0.4),rgba(232,160,32,0.15),transparent)",animation:"caveGlow 3s ease-in-out infinite",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"15%",right:"3%",width:4,height:"60%",background:"linear-gradient(180deg,transparent,rgba(232,160,32,0.4),rgba(232,160,32,0.15),transparent)",animation:"caveGlow 3s ease-in-out infinite 1.5s",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"10%",left:"2%",width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.5),transparent)",animation:"goldPulse 3s ease-in-out infinite",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"10%",right:"2%",width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.5),transparent)",animation:"goldPulse 3s ease-in-out infinite 1.5s",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"15%",left:"3%",width:4,height:"60%",background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.4),rgba(232,160,32,0.15),transparent)",animation:"caveGlow 3s ease-in-out infinite",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"15%",right:"3%",width:4,height:"60%",background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.4),rgba(232,160,32,0.15),transparent)",animation:"caveGlow 3s ease-in-out infinite 1.5s",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"10%",left:"2%",width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,146,42,0.5),transparent)",animation:"goldPulse 3s ease-in-out infinite",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"10%",right:"2%",width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,146,42,0.5),transparent)",animation:"goldPulse 3s ease-in-out infinite 1.5s",pointerEvents:"none"}}/>
       {/* cave wall texture — stone-like horizontal lines */}
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(123,47,255,0.018) 1px,transparent 1px)",backgroundSize:"100% 40px",pointerEvents:"none"}}/>
       {/* corner rune marks */}
@@ -1326,15 +1326,15 @@ function GardenSection({t,onRedeem,onShelf,strains}){
 
         {/* TOP label — ancient inscription */}
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
-          <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(232,160,32,0.5))"}}/>
-          <span style={{fontSize:8,letterSpacing:5,color:"rgba(232,160,32,0.8)",textTransform:"uppercase",textShadow:"0 0 10px rgba(232,160,32,0.4)",whiteSpace:"nowrap"}}>⬡ AZRON'S SACRED VAULT ⬡</span>
-          <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(232,160,32,0.5),transparent)"}}/>
+          <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(200,146,42,0.5))"}}/>
+          <span style={{fontSize:8,letterSpacing:5,color:"rgba(232,160,32,0.8)",textTransform:"uppercase",textShadow:"0 0 10px rgba(200,146,42,0.4)",whiteSpace:"nowrap"}}>⬡ AZRON'S SACRED VAULT ⬡</span>
+          <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.5),transparent)"}}/>
         </div>
 
         {/* Title */}
         <div style={{textAlign:"center",marginBottom:48}}>
           <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:"#e8e0f0",margin:"0",textTransform:"uppercase",lineHeight:0.9,animation:"glitch 8s ease-in-out infinite"}}>The</h2>
-          <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:"#e8a020",margin:"0 0 16px",textTransform:"uppercase",lineHeight:0.9,textShadow:"0 0 30px rgba(232,160,32,0.8),0 0 60px rgba(232,160,32,0.3)"}}>Vault</h2>
+          <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:"#c8922a",margin:"0 0 16px",textTransform:"uppercase",lineHeight:0.9,textShadow:"0 0 30px rgba(232,160,32,0.8),0 0 60px rgba(232,160,32,0.3)"}}>Vault</h2>
           <p style={{fontSize:14,color:"#7a7090",lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Every batch is rare. Every claim is yours alone. Exotic, premium and top-tier batches — guarded by AZRON, waiting for the worthy.</p>
         </div>
 
@@ -1351,28 +1351,28 @@ function GardenSection({t,onRedeem,onShelf,strains}){
             <rect x="40" y="80" width="60" height="300" fill="#0a0818" stroke="rgba(232,160,32,0.25)" strokeWidth="1"/>
             {/* left pillar gold vein */}
             <line x1="70" y1="90" x2="70" y2="370" stroke="rgba(232,160,32,0.3)" strokeWidth="1.5" strokeDasharray="8 12"/>
-            <rect x="30" y="70" width="80" height="20" fill="#0a0818" stroke="rgba(232,160,32,0.4)" strokeWidth="1"/>
+            <rect x="30" y="70" width="80" height="20" fill="#0a0818" stroke="rgba(200,146,42,0.4)" strokeWidth="1"/>
             {/* left torch */}
-            <rect x="60" y="55" width="20" height="30" fill="rgba(232,160,32,0.2)" stroke="rgba(232,160,32,0.6)" strokeWidth="1"/>
-            <ellipse cx="70" cy="55" rx="12" ry="18" fill="rgba(232,160,32,0.4)" style={{filter:"blur(3px)",animation:"goldPulse 2s ease-in-out infinite"}}/>
+            <rect x="60" y="55" width="20" height="30" fill="rgba(232,160,32,0.2)" stroke="rgba(200,146,42,0.6)" strokeWidth="1"/>
+            <ellipse cx="70" cy="55" rx="12" ry="18" fill="rgba(200,146,42,0.4)" style={{filter:"blur(3px)",animation:"goldPulse 2s ease-in-out infinite"}}/>
 
             {/* right pillar */}
             <rect x="420" y="80" width="60" height="300" fill="#0a0818" stroke="rgba(232,160,32,0.25)" strokeWidth="1"/>
             {/* right pillar gold vein */}
             <line x1="450" y1="90" x2="450" y2="370" stroke="rgba(232,160,32,0.3)" strokeWidth="1.5" strokeDasharray="8 12"/>
-            <rect x="410" y="70" width="80" height="20" fill="#0a0818" stroke="rgba(232,160,32,0.4)" strokeWidth="1"/>
+            <rect x="410" y="70" width="80" height="20" fill="#0a0818" stroke="rgba(200,146,42,0.4)" strokeWidth="1"/>
             {/* right torch */}
-            <rect x="440" y="55" width="20" height="30" fill="rgba(232,160,32,0.2)" stroke="rgba(232,160,32,0.6)" strokeWidth="1"/>
-            <ellipse cx="450" cy="55" rx="12" ry="18" fill="rgba(232,160,32,0.4)" style={{filter:"blur(3px)",animation:"goldPulse 2s ease-in-out infinite 1s"}}/>
+            <rect x="440" y="55" width="20" height="30" fill="rgba(232,160,32,0.2)" stroke="rgba(200,146,42,0.6)" strokeWidth="1"/>
+            <ellipse cx="450" cy="55" rx="12" ry="18" fill="rgba(200,146,42,0.4)" style={{filter:"blur(3px)",animation:"goldPulse 2s ease-in-out infinite 1s"}}/>
 
             {/* arch top */}
-            <path d="M 100 80 Q 260 -20 420 80" fill="none" stroke="rgba(232,160,32,0.5)" strokeWidth="2"/>
+            <path d="M 100 80 Q 260 -20 420 80" fill="none" stroke="rgba(200,146,42,0.5)" strokeWidth="2"/>
             <path d="M 110 80 Q 260 -10 410 80" fill="none" stroke="rgba(123,47,255,0.3)" strokeWidth="1"/>
             {/* arch circuit veins */}
             {[0.25,0.5,0.75].map((t,i)=>{
               const x=100+(420-100)*t;
               const y=80-Math.sin(Math.PI*t)*100;
-              return <circle key={i} cx={x} cy={y} r="4" fill="none" stroke="rgba(232,160,32,0.5)" strokeWidth="1.5" style={{animation:`runeFlicker ${2+i*0.5}s ease-in-out infinite ${i*0.7}s`}}/>;
+              return <circle key={i} cx={x} cy={y} r="4" fill="none" stroke="rgba(200,146,42,0.5)" strokeWidth="1.5" style={{animation:`runeFlicker ${2+i*0.5}s ease-in-out infinite ${i*0.7}s`}}/>;
             })}
 
             {/* cave interior darkness with purple glow */}
@@ -1393,7 +1393,7 @@ function GardenSection({t,onRedeem,onShelf,strains}){
 
             {/* tier treasure chests — floating inside cave */}
             {[
-              {x:155,y:280,color:"#e8a020",label:"EXOTIC",delay:"0s"},
+              {x:155,y:280,color:"#c8922a",label:"EXOTIC",delay:"0s"},
               {x:260,y:240,color:"#7b2fff",label:"PREMIUM",delay:"0.8s"},
               {x:365,y:280,color:"#00d4ff",label:"TOP",delay:"1.6s"},
             ].map(({x,y,color,label,delay})=>(
@@ -1424,14 +1424,14 @@ function GardenSection({t,onRedeem,onShelf,strains}){
               position:"absolute",
               top:"52%",left:"50%",transform:"translate(-50%,-50%)",
               padding:"14px 28px",
-              background:hoverVault?"rgba(232,160,32,0.2)":"rgba(232,160,32,0.08)",
-              border:`1px solid ${hoverVault?"rgba(232,160,32,0.9)":"rgba(232,160,32,0.4)"}`,
+              background:hoverVault?"rgba(232,160,32,0.2)":"rgba(200,146,42,0.08)",
+              border:`1px solid ${hoverVault?"rgba(232,160,32,0.9)":"rgba(200,146,42,0.4)"}`,
               cursor:"pointer",
               display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
               transition:"all 0.3s",
-              boxShadow:hoverVault?"0 0 30px rgba(232,160,32,0.4),0 0 60px rgba(232,160,32,0.1)":"0 0 15px rgba(232,160,32,0.1)",
+              boxShadow:hoverVault?"0 0 30px rgba(200,146,42,0.4),0 0 60px rgba(232,160,32,0.1)":"0 0 15px rgba(232,160,32,0.1)",
             }}>
-            <span style={{fontSize:"clamp(8px,1.5vw,10px)",letterSpacing:3,color:hoverVault?"#e8a020":"rgba(232,160,32,0.7)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:900,textAlign:"center",lineHeight:1.4}}>
+            <span style={{fontSize:"clamp(8px,1.5vw,10px)",letterSpacing:3,color:hoverVault?"#c8922a":"rgba(232,160,32,0.7)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:900,textAlign:"center",lineHeight:1.4}}>
               {hoverVault?"ENTERING...":"ENTER THE VAULT"}
             </span>
           </button>
@@ -1462,7 +1462,7 @@ function GardenSection({t,onRedeem,onShelf,strains}){
               <div style={{width:7,height:7,borderRadius:"50%",background:"#00ff88",boxShadow:"0 0 6px #00ff88",flexShrink:0}}/>
               <span style={{fontSize:9,letterSpacing:3,color:"#7a7090",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",flexShrink:0}}>Active Batch:</span>
               <span style={{fontSize:11,letterSpacing:2,color:"#00d4ff",fontFamily:"'Inter',sans-serif",fontWeight:700,animation:"codeFade 1.5s ease-in-out infinite",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentStrain.name}</span>
-              <span style={{marginLeft:"auto",fontSize:8,color:"#e8a020",letterSpacing:1,flexShrink:0}}>{currentStrain.tier}</span>
+              <span style={{marginLeft:"auto",fontSize:8,color:"#c8922a",letterSpacing:1,flexShrink:0}}>{currentStrain.tier}</span>
             </div>
           )}
 
@@ -1480,11 +1480,11 @@ function GardenSection({t,onRedeem,onShelf,strains}){
               fontSize:12,fontWeight:900,letterSpacing:3,
               textTransform:"uppercase",
               fontFamily:"'Inter',sans-serif",
-              boxShadow:"0 0 20px rgba(232,160,32,0.4),0 0 40px rgba(232,160,32,0.15)",
+              boxShadow:"0 0 20px rgba(200,146,42,0.4),0 0 40px rgba(232,160,32,0.15)",
               transition:"transform 0.2s,box-shadow 0.2s",
             }}
-            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 30px rgba(232,160,32,0.6),0 0 60px rgba(232,160,32,0.25)";}}
-            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 20px rgba(232,160,32,0.4),0 0 40px rgba(232,160,32,0.15)";}}>
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 30px rgba(200,146,42,0.6),0 0 60px rgba(232,160,32,0.25)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 20px rgba(200,146,42,0.4),0 0 40px rgba(232,160,32,0.15)";}}>
             💎 Load GMC · Level Up
           </button>
 
@@ -1505,18 +1505,51 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
   return(
     <div style={{position:"relative",background:"#080612"}}>
       <style>{`
-        @keyframes azron-data{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
-        @keyframes azron-data2{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
-        @keyframes azron-torch{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
-        @keyframes azron-rune{0%,100%{opacity:0.2}50%{opacity:0.5}}
-        @keyframes cave-glow{0%,100%{opacity:0.7}50%{opacity:1}}
-        @keyframes treasure-float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-8px)}}
+        @keyframes az-drift1{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
+        @keyframes az-drift2{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
+        @keyframes goldDrift{0%{transform:translateY(0px) translateX(0px)}33%{transform:translateY(-20px) translateX(8px)}66%{transform:translateY(-8px) translateX(-6px)}100%{transform:translateY(0px) translateX(0px)}}
+        @keyframes torchFlicker{0%,100%{opacity:0.4}50%{opacity:0.7}}
+        @keyframes floatCrystal{0%,100%{transform:translateY(0px)}50%{transform:translateY(-20px)}}
+        @keyframes floatCrystal2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-15px)}}
+        @keyframes floatCrystal3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-18px)}}
       `}</style>
-      {/* PAGE-WIDE: vertical data streams — AZRON's ancient code flowing */}
-      <div style={{position:"fixed",top:0,left:"2vw",width:1,height:"100vh",background:"linear-gradient(transparent 0%,rgba(123,47,255,0.12) 30%,rgba(123,47,255,0.06) 70%,transparent 100%)",animation:"azron-data 12s linear infinite",pointerEvents:"none",zIndex:0}}/>
-      <div style={{position:"fixed",top:0,right:"2vw",width:1,height:"100vh",background:"linear-gradient(transparent 0%,rgba(232,160,32,0.08) 40%,rgba(232,160,32,0.04) 70%,transparent 100%)",animation:"azron-data2 18s linear infinite 4s",pointerEvents:"none",zIndex:0}}/>
-      {/* PAGE-WIDE: continuous purple atmosphere — runs behind all sections */}
-      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"radial-gradient(ellipse at 75% 20%,rgba(123,47,255,0.06) 0%,transparent 50%)",pointerEvents:"none",zIndex:0}}/>
+
+      {/* ── ONE UNIFIED BACKGROUND — AZRON's world, runs behind ALL sections ── */}
+
+      {/* purple presence — top right, where AZRON stands */}
+      <div style={{position:"fixed",top:0,right:0,width:"55vw",height:"55vh",
+        background:"radial-gradient(ellipse at top right,rgba(123,47,255,0.09) 0%,rgba(123,47,255,0.03) 50%,transparent 75%)",
+        pointerEvents:"none",zIndex:0}}/>
+
+      {/* gold ancient warmth — mid page center */}
+      <div style={{position:"fixed",top:"35%",left:"50%",transform:"translate(-50%,-50%)",
+        width:"70vw",height:"50vh",
+        background:"radial-gradient(ellipse,rgba(200,146,42,0.05) 0%,transparent 65%)",
+        pointerEvents:"none",zIndex:0}}/>
+
+      {/* gold floor glow — bottom of realm */}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
+        width:"45vw",height:"25vh",
+        background:"radial-gradient(ellipse at bottom,rgba(200,146,42,0.055) 0%,transparent 65%)",
+        pointerEvents:"none",zIndex:0}}/>
+
+      {/* LEFT gold pillar line — full page height */}
+      <div style={{position:"fixed",top:0,left:"3vw",width:1,height:"100vh",
+        background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.18) 30%,rgba(200,146,42,0.1) 70%,transparent)",
+        animation:"az-drift1 14s linear infinite",
+        pointerEvents:"none",zIndex:0}}/>
+
+      {/* RIGHT purple pillar line — full page height */}
+      <div style={{position:"fixed",top:0,right:"3vw",width:1,height:"100vh",
+        background:"linear-gradient(180deg,transparent,rgba(123,47,255,0.14) 30%,rgba(123,47,255,0.07) 70%,transparent)",
+        animation:"az-drift2 20s linear infinite 4s",
+        pointerEvents:"none",zIndex:0}}/>
+
+      {/* stone texture — ultra subtle horizontal lines full page */}
+      <div style={{position:"fixed",inset:0,
+        backgroundImage:"linear-gradient(rgba(200,146,42,0.012) 1px,transparent 1px)",
+        backgroundSize:"100% 44px",
+        pointerEvents:"none",zIndex:0}}/>
       {/* HERO */}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",backgroundColor:th.bgDeep}}>
         {/* AZRON — cover + right anchored, works all screen sizes */}
@@ -1567,44 +1600,22 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,#080612 0%,transparent 10%,transparent 90%,#080612 100%)",pointerEvents:"none",zIndex:1}}/>
         <div style={{display:"flex",animation:"marqueeAnim 32s linear infinite",whiteSpace:"nowrap"}}>
           {[...Array(4)].map((_,i)=>(
-            <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:4,color:"rgba(232,160,32,0.7)",textTransform:"uppercase",paddingRight:60}}>
+            <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:4,color:"rgba(200,146,42,0.8)",textTransform:"uppercase",paddingRight:60}}>
               ⬡ AZRON'S VAULT IS OPEN &nbsp;·&nbsp; GMC MEMBERS ONLY &nbsp;·&nbsp; RARE BATCHES INSIDE &nbsp;·&nbsp; GLASSCORP ARENA &nbsp;·&nbsp; ENTER THE REALM &nbsp;·&nbsp;
             </span>
           ))}
         </div>
       </div>
 
-      {/* FEATURED BATCHES — AZRON's outer chamber with real background */}
+      {/* FEATURED BATCHES */}
       <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 180px",
-        background:"#080612"}}>
-        {/* REAL background image — blurred + darkened */}
-        <div style={{position:"absolute",inset:0,
-          backgroundImage:`url(${CHARS.FEATURED_BG})`,
-          backgroundSize:"cover",
-          backgroundPosition:"center center",
-          backgroundRepeat:"no-repeat",
-          opacity:0.7,
-          filter:"blur(2px)",
-          transform:"scale(1.02)",
-          pointerEvents:"none"}}/>
-        {/* dark veil — text readable */}
-        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.55)",pointerEvents:"none"}}/>
-        {/* top bleed from hero */}
-        <div style={{position:"absolute",top:0,left:0,width:"100%",height:160,
-          background:"linear-gradient(180deg,#080612,transparent)",pointerEvents:"none",zIndex:1}}/>
-        {/* bottom bleed into vault */}
-        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:160,
-          background:"linear-gradient(180deg,transparent,#06040e)",pointerEvents:"none",zIndex:1}}/>
-        {/* center dark overlay so cards stay readable */}
-        <div style={{position:"absolute",inset:0,
-          background:"linear-gradient(90deg,rgba(8,6,18,0.3) 0%,rgba(8,6,18,0.1) 30%,rgba(8,6,18,0.1) 70%,rgba(8,6,18,0.3) 100%)",
-          pointerEvents:"none",zIndex:1}}/>
+        background:"transparent"}}>
         {/* CONTENT */}
         <div style={{position:"relative",zIndex:2,maxWidth:1400,margin:"0 auto"}}>
           {/* section header */}
           <div style={{textAlign:"center",marginBottom:80}}>
-            <div style={{color:"#e8a020",letterSpacing:"0.4em",fontSize:12,marginBottom:18,opacity:0.75}}>◆ OUTER CHAMBER ◆</div>
-            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#f4d28d",fontSize:"clamp(42px,7vw,88px)",lineHeight:1,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase"}}>
+            <div style={{color:"#c8922a",letterSpacing:"0.4em",fontSize:12,marginBottom:18,opacity:0.75}}>◆ OUTER CHAMBER ◆</div>
+            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#e8c98a",fontSize:"clamp(42px,7vw,88px)",lineHeight:1,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase"}}>
               FEATURED BATCHES
             </h2>
             <p style={{marginTop:20,color:"#b7aacd",letterSpacing:"0.22em",fontSize:13,opacity:0.7}}>HAND SELECTED · SPIRIT APPROVED</p>
@@ -1647,62 +1658,49 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         @keyframes floatCrystal3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-18px)}}
         @media(max-width:900px){.vault-grid{grid-template-columns:1fr!important;gap:40px!important;}}
       `}</style>
-      <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 160px",background:"#06040e"}}>
-        {/* REAL vault background image — blurred + darkened */}
-        <div style={{position:"absolute",inset:0,
-          backgroundImage:`url(${CHARS.VAULT_BG})`,
-          backgroundSize:"cover",
-          backgroundPosition:"center right",
-          backgroundRepeat:"no-repeat",
-          opacity:0.75,
-          filter:"blur(2px)",
-          transform:"scale(1.02)",
-          pointerEvents:"none"}}/>
-        {/* dark veil — text readable */}
-        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.5)",pointerEvents:"none"}}/>
-        {/* top bleed */}
-        <div style={{position:"absolute",top:0,left:0,width:"100%",height:160,background:"linear-gradient(180deg,#06040e,transparent)",pointerEvents:"none",zIndex:1}}/>
-        {/* left text area darkener */}
-        <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(6,4,14,0.7) 0%,rgba(6,4,14,0.4) 40%,rgba(6,4,14,0.1) 60%,transparent 80%)",pointerEvents:"none",zIndex:1}}/>
-        {/* bottom bleed */}
-        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:160,background:"linear-gradient(180deg,transparent,#080612)",pointerEvents:"none",zIndex:1}}/>
-
+      <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 160px",background:"transparent"}}>
         {/* CONTENT */}
         <div className="vault-grid" style={{position:"relative",zIndex:2,maxWidth:1400,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"clamp(40px,6vw,80px)",alignItems:"center"}}>
 
           {/* LEFT — title + crystals + button */}
           <div style={{position:"relative",zIndex:2}}>
-            <div style={{color:"#e8a020",letterSpacing:"0.35em",fontSize:12,marginBottom:18,opacity:0.7}}>◆ AZRON'S SACRED VAULT ◆</div>
-            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#f4d28d",fontSize:"clamp(52px,8vw,120px)",lineHeight:0.95,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase",textShadow:"0 0 40px rgba(232,160,32,0.15)"}}>
+            <div style={{color:"#c8922a",letterSpacing:"0.35em",fontSize:12,marginBottom:18,opacity:0.7}}>◆ AZRON'S SACRED VAULT ◆</div>
+            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#e8c98a",fontSize:"clamp(52px,8vw,120px)",lineHeight:0.95,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase",textShadow:"0 0 40px rgba(232,160,32,0.15)"}}>
               THE VAULT
             </h2>
             <p style={{marginTop:28,color:"#b7aacd",fontSize:15,lineHeight:1.8,maxWidth:480,opacity:0.82}}>
               Beyond this threshold lies AZRON's hidden treasury — sacred relics suspended inside ancient divine circuitry.
             </p>
 
-            {/* 3 crystals with labels */}
+            {/* 3 SVG crystals with labels */}
             <div style={{display:"flex",gap:32,marginTop:44,alignItems:"flex-end"}}>
               {[
-                {img:CHARS.CRYSTAL_EXOTIC,label:"EXOTIC",color:"#e8a020",delay:"0s",size:90},
-                {img:CHARS.CRYSTAL_PREMIUM,label:"PREMIUM",color:"#7b2fff",delay:"1.2s",size:80},
-                {img:CHARS.CRYSTAL_TOP,label:"TOP",color:"#00d4ff",delay:"0.6s",size:85},
-              ].map(({img,label,color,delay,size})=>(
+                {label:"EXOTIC",color:"#c8922a",glow:"rgba(200,146,42,0.5)",delay:"0s"},
+                {label:"PREMIUM",color:"#7b2fff",glow:"rgba(123,47,255,0.5)",delay:"1.2s"},
+                {label:"TOP",color:"#00d4ff",glow:"rgba(0,212,255,0.5)",delay:"0.6s"},
+              ].map(({label,color,glow,delay})=>(
                 <div key={label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-                  <img src={img} alt={label}
-                    style={{width:size,height:"auto",objectFit:"contain",
-                      animation:`floatCrystal 6s ease-in-out infinite`,
-                      animationDelay:delay,
-                      filter:`drop-shadow(0 0 12px ${color}60)`,
-                    }}/>
+                  <div style={{animation:`floatCrystal 6s ease-in-out infinite`,animationDelay:delay,filter:`drop-shadow(0 0 14px ${glow})`}}>
+                    <svg viewBox="0 0 60 90" width="60" height="90">
+                      {/* crystal facets */}
+                      <polygon points="30,5 50,35 30,85 10,35" fill={color} opacity="0.85"/>
+                      <polygon points="30,5 50,35 30,50 10,35" fill={color} opacity="0.4"/>
+                      <polygon points="30,5 50,35 30,35" fill="rgba(255,255,255,0.15)" opacity="0.6"/>
+                      {/* inner glow line */}
+                      <line x1="30" y1="12" x2="30" y2="78" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                      {/* glow pool */}
+                      <ellipse cx="30" cy="86" rx="18" ry="4" fill={color} opacity="0.25"/>
+                    </svg>
+                  </div>
                   <span style={{fontSize:8,letterSpacing:3,color,textTransform:"uppercase",opacity:0.8}}>{label}</span>
                 </div>
               ))}
             </div>
 
             <button onClick={onShelf}
-              style={{marginTop:40,padding:"16px 32px",border:"1px solid rgba(232,160,32,0.5)",background:"rgba(6,4,14,0.8)",color:"#f4d28d",letterSpacing:"0.18em",fontSize:12,cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,textTransform:"uppercase",transition:"transform 0.3s ease,border-color 0.3s ease"}}
+              style={{marginTop:40,padding:"16px 32px",border:"1px solid rgba(200,146,42,0.5)",background:"rgba(6,4,14,0.8)",color:"#e8c98a",letterSpacing:"0.18em",fontSize:12,cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,textTransform:"uppercase",transition:"transform 0.3s ease,border-color 0.3s ease"}}
               onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.03)";e.currentTarget.style.borderColor="rgba(232,160,32,0.9)";}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.borderColor="rgba(232,160,32,0.5)";}}>
+              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.borderColor="rgba(200,146,42,0.5)";}}>
               ◆ ENTER THE VAULT ◆
             </button>
           </div>
@@ -1714,20 +1712,13 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:200,background:"linear-gradient(180deg,transparent,#080612)",pointerEvents:"none",zIndex:2}}/>
       </section>
 
-      {/* GMC INFO — AZRON's deepest treasury chamber */}
+      {/* GMC INFO — AZRON's treasury */}
       <section style={{padding:"100px 5vw",position:"relative",overflow:"hidden",
-        background:"linear-gradient(180deg,#08050f 0%,#080612 50%,#06040e 100%)"}}>
-        {/* seamless bleed from cave */}
-        <div style={{position:"absolute",top:0,left:0,right:0,height:100,background:"linear-gradient(180deg,#08050f,transparent)",pointerEvents:"none",zIndex:1}}/>
-        {/* gold treasury glow — warm amber from center */}
-        <div style={{position:"absolute",top:"40%",left:"50%",transform:"translate(-50%,-50%)",width:"70vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.08) 0%,rgba(123,47,255,0.06) 40%,transparent 70%)",pointerEvents:"none"}}/>
-        {/* purple depth from corners */}
-        <div style={{position:"absolute",top:0,left:0,width:"40vw",height:"40vw",background:"radial-gradient(circle at top left,rgba(123,47,255,0.1) 0%,transparent 60%)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:0,right:0,width:"40vw",height:"40vw",background:"radial-gradient(circle at bottom right,rgba(123,47,255,0.08) 0%,transparent 60%)",pointerEvents:"none"}}/>
-        {/* ancient gold vein lines */}
-        <div style={{position:"absolute",top:0,left:"5vw",right:"5vw",height:1,background:"linear-gradient(90deg,transparent,rgba(232,160,32,0.4),rgba(123,47,255,0.3),rgba(232,160,32,0.4),transparent)"}}/>
-        {/* stone texture */}
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(232,160,32,0.012) 1px,transparent 1px)",backgroundSize:"100% 50px",pointerEvents:"none"}}/>
+        background:"transparent"}}>
+        {/* gold vein divider at top — only decoration kept */}
+        <div style={{position:"absolute",top:0,left:"5vw",right:"5vw",height:1,
+          background:"linear-gradient(90deg,transparent,rgba(200,146,42,0.4),rgba(123,47,255,0.3),rgba(200,146,42,0.4),transparent)",
+          pointerEvents:"none"}}/>
         <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,380px),1fr))",gap:"6vw",alignItems:"center"}}>
           <div>
             <div style={{fontSize:10,letterSpacing:5,color:th.amber,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.amber}`}}>— The Token</div>
@@ -1781,8 +1772,8 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           <div style={{background:th.bgCard,border:`1px solid ${th.amber}40`,padding:"56px 36px",textAlign:"center",boxShadow:`0 0 40px ${th.amber}10`,position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"150%",height:"150%",borderRadius:"50%",background:`radial-gradient(circle,${th.amber}08 0%,transparent 60%)`,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
-              <GMCCoin size={80} theme={{amber:"#e8a020"}}/>
-              <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(48px,8vw,80px)",fontWeight:900,color:"#e8a020",lineHeight:0.9,letterSpacing:"-0.04em",textShadow:"0 0 40px rgba(232,160,32,0.8)",marginTop:20}}>GMC</div>
+              <GMCCoin size={80} theme={{amber:"#c8922a"}}/>
+              <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(48px,8vw,80px)",fontWeight:900,color:"#c8922a",lineHeight:0.9,letterSpacing:"-0.04em",textShadow:"0 0 40px rgba(232,160,32,0.8)",marginTop:20}}>GMC</div>
               <div style={{fontSize:11,letterSpacing:4,color:th.dim,textTransform:"uppercase",marginTop:12}}>Glasscorp Member Credit</div>
               <div style={{width:"100%",height:1,background:`linear-gradient(90deg,transparent,${th.amber},transparent)`,margin:"20px 0"}}/>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1853,7 +1844,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
             <span style={{fontSize:9,color:th.dim,letterSpacing:1}}>© Glasscorp Arena</span>
-            <span style={{background:"#e8a020",color:"#000",fontWeight:900,fontSize:9,padding:"2px 8px",letterSpacing:2}}>21+</span>
+            <span style={{background:"#c8922a",color:"#000",fontWeight:900,fontSize:9,padding:"2px 8px",letterSpacing:2}}>21+</span>
           </div>
         </div>
       </footer>
@@ -2231,12 +2222,12 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
 
           {/* GMC Balance — hero number */}
           <div style={{background:"rgba(0,0,0,0.35)",border:`1px solid rgba(232,160,32,0.2)`,padding:"20px 24px",marginBottom:20,position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(232,160,32,0.4),transparent)"}}/>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(200,146,42,0.4),transparent)"}}/>
             <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:8}}>GMC Balance</div>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <GMCCoin size={40} theme={{amber:"#e8a020"}}/>
+              <GMCCoin size={40} theme={{amber:"#c8922a"}}/>
               <div>
-                <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(36px,7vw,52px)",fontWeight:900,color:"#e8a020",lineHeight:0.9,textShadow:"0 0 30px rgba(232,160,32,0.6)",letterSpacing:"-0.03em"}}>{(user.gmcBalance||0).toLocaleString()}</div>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(36px,7vw,52px)",fontWeight:900,color:"#c8922a",lineHeight:0.9,textShadow:"0 0 30px rgba(200,146,42,0.6)",letterSpacing:"-0.03em"}}>{(user.gmcBalance||0).toLocaleString()}</div>
                 <div style={{fontSize:9,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginTop:4}}>GMC · Glasscorp Credits</div>
               </div>
             </div>
@@ -2245,7 +2236,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
           {/* Stats row */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginBottom:20}}>
             {[
-              ["Total Spent",(user.totalSpent||0).toLocaleString()+" GMC","#e8a020"],
+              ["Total Spent",(user.totalSpent||0).toLocaleString()+" GMC","#c8922a"],
               ["Member Since",joinDate,th.a1],
               ["Status","Active","#00ff88"],
             ].map(([l,v,c])=>(
@@ -2284,7 +2275,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
                     <div style={{fontSize:9,color:th.dim,marginTop:2,maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.deliveryAddress}</div>
                   )}
                   {!editingDelivery&&!user.deliveryAddress&&(
-                    <div style={{fontSize:9,color:"#e8a020",marginTop:2}}>Tap to set up your portal</div>
+                    <div style={{fontSize:9,color:"#c8922a",marginTop:2}}>Tap to set up your portal</div>
                   )}
                 </div>
               </div>
@@ -2381,7 +2372,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
                   <div style={{fontSize:8,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Preferred Time</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                     {[
-                      {id:"sunrise",label:"Sunrise",sub:"8am · 6pm",icon:"🌅",bg:"linear-gradient(135deg,rgba(255,160,30,0.12),rgba(255,100,0,0.06))",activeBg:"linear-gradient(135deg,rgba(255,160,30,0.25),rgba(255,100,0,0.15))",color:"#e8a020",glow:"rgba(232,160,32,0.4)"},
+                      {id:"sunrise",label:"Sunrise",sub:"8am · 6pm",icon:"🌅",bg:"linear-gradient(135deg,rgba(255,160,30,0.12),rgba(255,100,0,0.06))",activeBg:"linear-gradient(135deg,rgba(255,160,30,0.25),rgba(255,100,0,0.15))",color:"#c8922a",glow:"rgba(200,146,42,0.4)"},
                       {id:"sunset",label:"Sunset",sub:"6pm · 4am",icon:"🌙",bg:"linear-gradient(135deg,rgba(123,47,255,0.12),rgba(0,212,255,0.06))",activeBg:"linear-gradient(135deg,rgba(123,47,255,0.25),rgba(0,212,255,0.15))",color:"#7b2fff",glow:"rgba(123,47,255,0.4)"},
                     ].map(slot=>{
                       const times=deliveryTime?deliveryTime.split(","):[];
@@ -2426,7 +2417,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
           <div style={{display:"grid",gridTemplateColumns:user.name.toLowerCase()==="jimsnows"?"1fr 1fr":"1fr",gap:6}}>
             {user.name.toLowerCase()==="jimsnows"&&(
               <button onClick={onShowPin}
-                style={{padding:"13px",background:"rgba(232,160,32,0.1)",border:"1px solid rgba(232,160,32,0.35)",color:"#e8a020",cursor:"pointer",fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s"}}
+                style={{padding:"13px",background:"rgba(232,160,32,0.1)",border:"1px solid rgba(232,160,32,0.35)",color:"#c8922a",cursor:"pointer",fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(232,160,32,0.2)";e.currentTarget.style.boxShadow="0 0 14px rgba(232,160,32,0.3)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(232,160,32,0.1)";e.currentTarget.style.boxShadow="none";}}>
                 🔐 Control Room
@@ -2445,7 +2436,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
         {(()=>{
           const myOrders=(orders||[]).filter(o=>o.memberId===user.id&&o.status!=="delivered").slice(0,5);
           if(myOrders.length===0) return null;
-          const ORDER_STATUS_MAP={new:{label:"Order Placed",color:"#00d4ff",icon:"🔔"},confirmed:{label:"Confirmed",color:"#7b2fff",icon:"✓"},on_the_way:{label:"On The Way",color:"#e8a020",icon:"🛵"},delivered:{label:"Delivered",color:"#00ff88",icon:"✅"}};
+          const ORDER_STATUS_MAP={new:{label:"Order Placed",color:"#00d4ff",icon:"🔔"},confirmed:{label:"Confirmed",color:"#7b2fff",icon:"✓"},on_the_way:{label:"On The Way",color:"#c8922a",icon:"🛵"},delivered:{label:"Delivered",color:"#00ff88",icon:"✅"}};
           return(
             <div style={{background:th.bgCard,border:`1px solid ${th.a1}30`,padding:"20px 24px",marginBottom:3}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -2506,7 +2497,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
                         <div style={{textAlign:"right",flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
                           <div>
                             {bits>0&&<div style={{fontSize:10,color:th.dim,marginBottom:2}}>{bits} bits</div>}
-                            <div style={{fontSize:11,fontWeight:700,color:"#e8a020"}}>{Math.abs(tx.amount).toLocaleString()} GMC</div>
+                            <div style={{fontSize:11,fontWeight:700,color:"#c8922a"}}>{Math.abs(tx.amount).toLocaleString()} GMC</div>
                           </div>
                           {matchedStrain&&matchedStrain.stock>0&&onAddToCart&&(
                             <button
@@ -2804,7 +2795,7 @@ function GMCOperationsPanel({members,transactions,onUpdateBalance,theme}){
                   </button>
                 </div>
                 <div style={{marginTop:8,fontSize:9,color:th.dim,textAlign:"center",letterSpacing:1}}>
-                  After: <span style={{color:th.amber,fontWeight:700}}>{((selectedMember.gmcBalance||0)+gmcAmt).toLocaleString()}</span> GMC (add) · <span style={{color:Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt)===0?"#e85020":"#e8a020",fontWeight:700}}>{Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt).toLocaleString()}</span> GMC (deduct)
+                  After: <span style={{color:th.amber,fontWeight:700}}>{((selectedMember.gmcBalance||0)+gmcAmt).toLocaleString()}</span> GMC (add) · <span style={{color:Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt)===0?"#e85020":"#c8922a",fontWeight:700}}>{Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt).toLocaleString()}</span> GMC (deduct)
                 </div>
               </div>
 
@@ -2875,7 +2866,7 @@ function GMCOperationsPanel({members,transactions,onUpdateBalance,theme}){
 const ORDER_STATUSES=[
   {id:"new",label:"New",color:"#00d4ff",icon:"🔔"},
   {id:"confirmed",label:"Confirmed",color:"#7b2fff",icon:"✓"},
-  {id:"on_the_way",label:"On The Way",color:"#e8a020",icon:"🛵"},
+  {id:"on_the_way",label:"On The Way",color:"#c8922a",icon:"🛵"},
   {id:"delivered",label:"Delivered",color:"#00ff88",icon:"✅"},
 ];
 
@@ -2920,7 +2911,7 @@ function OrdersPanel({orders=[],members=[],onUpdateStatus,theme}){
           ["Total Orders",orders.length,th.a1,"📦"],
           ["New",newCount,newCount>0?"#00d4ff":th.dim,"🔔"],
           ["Today",todayCount,th.a2,"📅"],
-          ["Revenue",totalRevenue.toLocaleString()+" GMC","#e8a020","💎"],
+          ["Revenue",totalRevenue.toLocaleString()+" GMC","#c8922a","💎"],
         ].map(([l,v,c,ic])=>(
           <div key={l} style={{background:th.bgCard,border:`1px solid ${c}20`,padding:"14px",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",bottom:-4,right:2,fontSize:24,opacity:0.07}}>{ic}</div>
@@ -2965,7 +2956,7 @@ function OrdersPanel({orders=[],members=[],onUpdateStatus,theme}){
                     <div style={{fontSize:9,color:th.dim,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.items.map(i=>`${i.strainName} ×${i.qty}`).join(", ")}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div style={{fontSize:9,color:th.dim,letterSpacing:0.5}}>{fmt(o.createdAt)}</div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#e8a020"}}>{o.totalGMC.toLocaleString()} GMC</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#c8922a"}}>{o.totalGMC.toLocaleString()} GMC</div>
                     </div>
                   </div>
                 );
@@ -3048,12 +3039,12 @@ function OrdersPanel({orders=[],members=[],onUpdateStatus,theme}){
                           <div style={{fontSize:11,fontWeight:700,color:th.text,textTransform:"uppercase"}}>{item.strainName}</div>
                           <div style={{fontSize:9,color:th.dim,marginTop:2}}>{item.qty} bits</div>
                         </div>
-                        <div style={{fontSize:12,fontWeight:700,color:"#e8a020"}}>{item.totalGMC.toLocaleString()} GMC</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#c8922a"}}>{item.totalGMC.toLocaleString()} GMC</div>
                       </div>
                     ))}
                     <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:8}}>
                       <span style={{fontSize:10,color:th.dim,textTransform:"uppercase",letterSpacing:1}}>Total · {selectedOrder.paidWith==="gmc"?"GMC Balance":"WhatsApp"}</span>
-                      <span style={{fontSize:14,fontWeight:900,color:"#e8a020"}}>{selectedOrder.totalGMC.toLocaleString()} GMC</span>
+                      <span style={{fontSize:14,fontWeight:900,color:"#c8922a"}}>{selectedOrder.totalGMC.toLocaleString()} GMC</span>
                     </div>
                   </div>
 
@@ -3644,7 +3635,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
               <div>
                 <div style={{fontSize:9,letterSpacing:4,color:th.dim,textTransform:"uppercase",marginBottom:4}}>Strain Management · {strains.length} strains</div>
                 <div style={{display:"flex",gap:12,alignItems:"center"}}>
-                  {lowStock.length>0&&<span style={{fontSize:9,color:"#e8a020",letterSpacing:1}}>⚠️ {lowStock.length} low stock</span>}
+                  {lowStock.length>0&&<span style={{fontSize:9,color:"#c8922a",letterSpacing:1}}>⚠️ {lowStock.length} low stock</span>}
                   {outOfStock.length>0&&<span style={{fontSize:9,color:"#e85020",letterSpacing:1}}>🔴 {outOfStock.length} out of stock</span>}
                 </div>
               </div>
@@ -3656,7 +3647,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
               {strains.map(s=>{
                 const sth=getTheme(s.type);
                 const ts=TIER_S[s.tier]||TIER_S["TOP"];
-                const stockColor=s.stock===0?"#e85020":s.stock<=5?"#e8a020":"#00ff88";
+                const stockColor=s.stock===0?"#e85020":s.stock<=5?"#c8922a":"#00ff88";
                 const isSat=s.type==="Sativa"||s.sativaRatio>=70;
                 const isInd=s.type==="Indica"||s.sativaRatio<=30;
                 return(
@@ -3842,7 +3833,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:3,marginBottom:3}}>
                     {[
-                      ["Total Revenue",totalRevenue.toLocaleString()+" GMC","#e8a020","💰"],
+                      ["Total Revenue",totalRevenue.toLocaleString()+" GMC","#c8922a","💰"],
                       ["This Week",weekTxs.length+" claims","#00ff88","📈"],
                       ["Avg Order",avgOrder.toLocaleString()+" GMC",th.a1,"◈"],
                       ["Active Members",activeMems+"/"+members.length,th.a2,"◉"],
@@ -3891,7 +3882,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
                 ["Total Strains",strains.length,th.a1,"💊"],
                 ["Total Stock",totalStock+"g",th.a2,"📦"],
                 ["Exotic Drops",strains.filter(s=>s.tier==="EXOTIC").length,th.amber,"💎"],
-                ["Low Stock",lowStock.length,lowStock.length>0?"#e8a020":th.dim,"⚠️"],
+                ["Low Stock",lowStock.length,lowStock.length>0?"#c8922a":th.dim,"⚠️"],
                 ["Out of Stock",outOfStock.length,outOfStock.length>0?"#e85020":th.dim,"🔴"],
                 ["Avg GMC/g",strains.length?(strains.reduce((a,s)=>a+s.gmcCost,0)/strains.length).toFixed(0):"—",th.a1,"💰"],
               ].map(([label,val,color,ic])=>(
@@ -3914,9 +3905,9 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
                     </div>
                   ))}
                   {lowStock.map(s=>(
-                    <div key={s.id} style={{background:"rgba(232,160,32,0.12)",border:"1px solid rgba(232,160,32,0.35)",padding:"6px 12px",fontSize:11,color:"#e8a020",display:"flex",gap:8,alignItems:"center"}}>
+                    <div key={s.id} style={{background:"rgba(232,160,32,0.12)",border:"1px solid rgba(232,160,32,0.35)",padding:"6px 12px",fontSize:11,color:"#c8922a",display:"flex",gap:8,alignItems:"center"}}>
                       ⚠️ {s.name} — {s.stock}g left
-                      <button onClick={()=>setEditing({...s})} style={{background:"transparent",border:"none",color:"#e8a020",cursor:"pointer",fontSize:9,letterSpacing:1,textDecoration:"underline",fontFamily:"'Inter',sans-serif",padding:0}}>Restock</button>
+                      <button onClick={()=>setEditing({...s})} style={{background:"transparent",border:"none",color:"#c8922a",cursor:"pointer",fontSize:9,letterSpacing:1,textDecoration:"underline",fontFamily:"'Inter',sans-serif",padding:0}}>Restock</button>
                     </div>
                   ))}
                 </div>
@@ -3948,7 +3939,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {[...strains].sort((a,b)=>b.stock-a.stock).map(s=>{
                   const pct=totalStock>0?(s.stock/Math.max(...strains.map(x=>x.stock)))*100:0;
-                  const sc=s.stock===0?"#e85020":s.stock<=5?"#e8a020":"#00ff88";
+                  const sc=s.stock===0?"#e85020":s.stock<=5?"#c8922a":"#00ff88";
                   return(
                     <div key={s.id} style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{flex:"0 0 150px",fontSize:10,color:th.text,textTransform:"uppercase",letterSpacing:"-0.01em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
@@ -4241,7 +4232,7 @@ function CartPanel({cart,strains,user,onClose,onUpdateQty,onRemove,onSpendGMC,on
                           {/* Price */}
                           <div style={{textAlign:"right"}}>
                             {saving>0&&<div style={{fontSize:9,color:th.dim,textDecoration:"line-through"}}>{base.toLocaleString()}</div>}
-                            <div style={{fontSize:13,fontWeight:900,color:"#e8a020"}}>{total.toLocaleString()} GMC</div>
+                            <div style={{fontSize:13,fontWeight:900,color:"#c8922a"}}>{total.toLocaleString()} GMC</div>
                           </div>
                         </div>
                       </div>
@@ -4278,8 +4269,8 @@ function CartPanel({cart,strains,user,onClose,onUpdateQty,onRemove,onSpendGMC,on
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <span style={{fontSize:11,color:th.dim,letterSpacing:2,textTransform:"uppercase"}}>Total</span>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <GMCCoin size={18} theme={{amber:"#e8a020"}}/>
-                <span style={{fontSize:22,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif"}}>{totalGMC.toLocaleString()}</span>
+                <GMCCoin size={18} theme={{amber:"#c8922a"}}/>
+                <span style={{fontSize:22,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif"}}>{totalGMC.toLocaleString()}</span>
               </div>
             </div>
             {/* Balance check */}
@@ -4624,12 +4615,12 @@ function StrainQuickAdd({strain,onClose,onConfirm,calcDiscount,calcCartItem,disc
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,color:th.text,letterSpacing:2,textTransform:"uppercase",fontWeight:700}}>Total</span>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <GMCCoin size={20} theme={{amber:"#e8a020"}}/>
+                <GMCCoin size={20} theme={{amber:"#c8922a"}}/>
                 <span style={{
                   fontFamily:"'Inter',sans-serif",
                   fontSize:28,fontWeight:900,
-                  color:"#e8a020",
-                  textShadow:"0 0 20px rgba(232,160,32,0.6)",
+                  color:"#c8922a",
+                  textShadow:"0 0 20px rgba(200,146,42,0.6)",
                   animation:"popIn 0.2s ease-out"
                 }}>{total.toLocaleString()}</span>
               </div>
@@ -4873,7 +4864,7 @@ YOUR JOB:
             </div>
             <div style={{textAlign:"right"}}>
               <div style={{fontSize:7,color:"rgba(255,255,255,0.35)",letterSpacing:1,textTransform:"uppercase"}}>GMC</div>
-              <div style={{fontSize:13,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif"}}>{strain.gmcCost}</div>
+              <div style={{fontSize:13,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif"}}>{strain.gmcCost}</div>
             </div>
           </div>
           <div style={{fontSize:8,color:"rgba(255,255,255,0.25)",letterSpacing:1,marginBottom:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{strain.effects.slice(0,2).join(" · ")}</div>
@@ -4931,7 +4922,7 @@ YOUR JOB:
             <path d="M12.2 6.2 11 5"/>
           </svg>
           {msgs.length===0&&(
-            <div style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#e8a020",boxShadow:"0 0 6px #e8a020"}}/>
+            <div style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#c8922a",boxShadow:"0 0 6px #e8a020"}}/>
           )}
           {minimized&&msgs.length>0&&(
             <div style={{position:"absolute",top:-4,right:-4,minWidth:16,height:16,borderRadius:8,background:"#e85020",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:700,fontFamily:"'Inter',sans-serif",padding:"0 3px"}}>
@@ -5296,7 +5287,7 @@ function ConfirmModal({items,total,user,onConfirm,onCancel}){
                   <div style={{fontSize:11,color:T.base.text,fontWeight:700}}>{item.name}</div>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <span style={{fontSize:10,color:T.base.dim}}>{item.qty} bits</span>
-                    <span style={{fontSize:11,fontWeight:700,color:"#e8a020"}}>{item.total.toLocaleString()} GMC</span>
+                    <span style={{fontSize:11,fontWeight:700,color:"#c8922a"}}>{item.total.toLocaleString()} GMC</span>
                   </div>
                 </div>
               ))}
@@ -5304,8 +5295,8 @@ function ConfirmModal({items,total,user,onConfirm,onCancel}){
             <div style={{borderTop:`1px solid ${T.base.border}`,marginTop:10,paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:10,color:T.base.dim,letterSpacing:1,textTransform:"uppercase"}}>Total</span>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <GMCCoin size={16} theme={{amber:"#e8a020"}}/>
-                <span style={{fontSize:18,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif"}}>{total.toLocaleString()}</span>
+                <GMCCoin size={16} theme={{amber:"#c8922a"}}/>
+                <span style={{fontSize:18,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif"}}>{total.toLocaleString()}</span>
               </div>
             </div>
           </div>
