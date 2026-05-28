@@ -1508,15 +1508,15 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
       {/* HERO */}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",background:th.bgDeep}}>
         <Particles theme={th} count={60}/>
-        <div style={{position:"absolute",top:"25%",left:"55%",width:"45vw",height:"45vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}12 0%,transparent 65%)`,pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:"20%",left:"5%",width:"30vw",height:"30vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a1}08 0%,transparent 65%)`,pointerEvents:"none"}}/>
-        {/* AZRON — homepage hero, right side desktop, behind text mobile */}
+        {/* AZRON full scene background */}
         <style>{`
-          @keyframes azron-home{0%,100%{opacity:0.18;transform:translateY(0px) scale(1)}50%{opacity:0.24;transform:translateY(-12px) scale(1.01)}}
-          .azron-home{position:absolute;right:-2%;bottom:-2%;height:92vh;width:auto;object-fit:contain;object-position:bottom right;opacity:0.2;animation:azron-home 7s ease-in-out infinite;pointer-events:none;user-select:none;filter:drop-shadow(0 0 60px rgba(255,215,0,0.12));}
-          @media(max-width:768px){.azron-home{right:unset;left:50%;transform:translateX(-50%);height:60vh;opacity:0.07;bottom:10%;}}
+          @keyframes azron-home-float{0%,100%{transform:scale(1) translateY(0px)}50%{transform:scale(1.01) translateY(-6px)}}
+          .azron-home-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center right;opacity:0.92;animation:azron-home-float 8s ease-in-out infinite;pointer-events:none;user-select:none;}
+          @media(max-width:768px){.azron-home-bg{object-position:right center;opacity:0.5;}}
         `}</style>
-        <img src={CHARS.AZRON} alt="" aria-hidden="true" className="azron-home"/>
+        <img src="https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png" alt="" aria-hidden="true" className="azron-home-bg"/>
+        {/* subtle extra glow overlay */}
+        <div style={{position:"absolute",top:"20%",left:"40%",width:"60vw",height:"60vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}08 0%,transparent 65%)`,pointerEvents:"none"}}/>
         <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
