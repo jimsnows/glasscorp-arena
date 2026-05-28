@@ -1506,24 +1506,25 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
   return(
     <div>
       {/* HERO */}
-      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",background:th.bgDeep}}>
+      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",
+        backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
+        backgroundSize:"cover",
+        backgroundPosition:"center right",
+        backgroundRepeat:"no-repeat",
+        backgroundColor:th.bgDeep}}>
         <Particles theme={th} count={60}/>
-        {/* AZRON full scene background */}
-        <style>{`
-          @keyframes azron-home-float{0%,100%{transform:scale(1) translateY(0px)}50%{transform:scale(1.01) translateY(-6px)}}
-          .azron-home-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center right;opacity:0.92;animation:azron-home-float 8s ease-in-out infinite;pointer-events:none;user-select:none;}
-          @media(max-width:768px){.azron-home-bg{object-position:right center;opacity:0.5;}}
-        `}</style>
-        <img src="https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png" alt="" aria-hidden="true" className="azron-home-bg"/>
-        {/* subtle extra glow overlay */}
-        <div style={{position:"absolute",top:"20%",left:"40%",width:"60vw",height:"60vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}08 0%,transparent 65%)`,pointerEvents:"none"}}/>
-        <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:1}}>
+        {/* dark gradient overlay — protects text on left, fades to transparent on right */}
+        <div style={{position:"absolute",inset:0,background:`linear-gradient(90deg, ${th.bgDeep}f5 0%, ${th.bgDeep}cc 35%, ${th.bgDeep}55 55%, transparent 75%)`,pointerEvents:"none",zIndex:0}}/>
+        {/* mobile overlay — darken more on small screens */}
+        <style>{`@media(max-width:768px){.hero-mobile-overlay{opacity:1!important;}}`}</style>
+        <div className="hero-mobile-overlay" style={{position:"absolute",inset:0,background:`${th.bgDeep}99`,pointerEvents:"none",zIndex:0,opacity:0}}/>
+        <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:2}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
             <span style={{fontSize:9,letterSpacing:4,color:th.a1,textTransform:"uppercase",textShadow:`0 0 6px ${th.a1}`}}>Glasscorp · Member Collective · Est. 2024</span>
           </div>
         </div>
-        <div style={{position:"relative",zIndex:1,maxWidth:900}}>
+        <div style={{position:"relative",zIndex:2,maxWidth:900}}>
           <div style={{fontSize:10,letterSpacing:5,color:th.a2,textTransform:"uppercase",marginBottom:18,textShadow:`0 0 10px ${th.a2}`}}>Rare batches. Real upgrades.</div>
           <h1 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(52px,10vw,130px)",fontWeight:900,lineHeight:0.88,letterSpacing:"-0.03em",color:th.text,margin:"0 0 28px",textTransform:"uppercase"}}>
             Glass<span style={{color:th.a1,textShadow:`0 0 30px ${th.a1},0 0 60px ${th.a1}40`}}>corp</span><br/>
