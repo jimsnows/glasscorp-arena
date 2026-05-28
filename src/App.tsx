@@ -1507,20 +1507,17 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
     <div>
       {/* HERO */}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",backgroundColor:th.bgDeep}}>
-        {/* AZRON — locked to right side, never shifts */}
+        {/* AZRON — fixed 1440px wide, always anchored right, never shifts */}
         <div style={{position:"absolute",inset:0,
           backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
-          backgroundSize:"auto 100%",
+          backgroundSize:"1440px 100%",
           backgroundPosition:"right center",
           backgroundRepeat:"no-repeat",
           pointerEvents:"none"}}/>
         <Particles theme={th} count={60}/>
-        {/* gradient overlay left — always protects text */}
-        <div style={{position:"absolute",inset:0,
-          background:`linear-gradient(90deg, ${th.bgDeep} 0%, ${th.bgDeep}ee 30%, ${th.bgDeep}99 50%, ${th.bgDeep}44 65%, transparent 80%)`,
-          pointerEvents:"none",zIndex:0}}/>
-        {/* dark overall overlay — on ALL screens, makes text pop */}
-        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.45)",pointerEvents:"none",zIndex:0}}/>
+        {/* gradient overlay — desktop clean, mobile lighter */}
+        <style>{`.hero-overlay{background:linear-gradient(90deg,#080612ff 0%,#080612ee 25%,#080612aa 42%,#08061233 60%,transparent 75%);}@media(max-width:768px){.hero-overlay{background:linear-gradient(90deg,#080612ee 0%,#080612bb 30%,#08061266 50%,#08061222 65%,transparent 80%);}}`}</style>
+        <div className="hero-overlay" style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:2}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
