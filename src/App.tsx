@@ -1506,18 +1506,21 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
   return(
     <div>
       {/* HERO */}
-      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",
-        backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
-        backgroundSize:"cover",
-        backgroundPosition:"center right",
-        backgroundRepeat:"no-repeat",
-        backgroundColor:th.bgDeep}}>
+      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",backgroundColor:th.bgDeep}}>
+        {/* AZRON — locked to right side, never shifts */}
+        <div style={{position:"absolute",inset:0,
+          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
+          backgroundSize:"auto 100%",
+          backgroundPosition:"right center",
+          backgroundRepeat:"no-repeat",
+          pointerEvents:"none"}}/>
         <Particles theme={th} count={60}/>
-        {/* dark gradient overlay — protects text on left, fades to transparent on right */}
-        <div style={{position:"absolute",inset:0,background:`linear-gradient(90deg, ${th.bgDeep}f5 0%, ${th.bgDeep}cc 35%, ${th.bgDeep}55 55%, transparent 75%)`,pointerEvents:"none",zIndex:0}}/>
-        {/* mobile overlay — darken more on small screens */}
-        <style>{`@media(max-width:768px){.hero-mobile-overlay{opacity:1!important;}}`}</style>
-        <div className="hero-mobile-overlay" style={{position:"absolute",inset:0,background:`${th.bgDeep}99`,pointerEvents:"none",zIndex:0,opacity:0}}/>
+        {/* gradient overlay left — always protects text */}
+        <div style={{position:"absolute",inset:0,
+          background:`linear-gradient(90deg, ${th.bgDeep} 0%, ${th.bgDeep}ee 30%, ${th.bgDeep}99 50%, ${th.bgDeep}44 65%, transparent 80%)`,
+          pointerEvents:"none",zIndex:0}}/>
+        {/* dark overall overlay — on ALL screens, makes text pop */}
+        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.45)",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:2}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
