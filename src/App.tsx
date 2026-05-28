@@ -6,6 +6,15 @@ const SUPA_URL = "https://febslpxjssjijooiukot.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlYnNscHhqc3NqaWpvb2l1a290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDg4MzgsImV4cCI6MjA5NTM4NDgzOH0.7dT4kRulXXmkoUkOHls0P7Eq4jna8hZlkEayW-O7PUY";
 const SUPA_HEADERS = { "Content-Type":"application/json", "apikey":SUPA_KEY, "Authorization":"Bearer "+SUPA_KEY };
 
+// ── CHARACTER URLS ──
+const CHARS = {
+  AZRON: "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/AZRON.png",
+  ARES:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/ARES.png",
+  SPARK: "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/SPARK.png",
+  DEEP:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/DEEP.png",
+  FLUX:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/FLUX.png",
+};
+
 async function sbGet(table, query=""){
   const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${query}`, { headers:SUPA_HEADERS });
   if(!res.ok) return [];
@@ -801,6 +810,9 @@ const StrainCard=React.memo(function StrainCard({strain,t,onView,onAddToCart,car
   const isSat=strain.type==="Sativa"||strain.type==="Sativa Hybrid";
   const isInd=strain.type==="Indica"||strain.type==="Indica Hybrid";
   const isHyb=!isSat&&!isInd;
+  // Faction operator for this strain type
+  const factionChar=isSat?CHARS.SPARK:isInd?CHARS.DEEP:CHARS.FLUX;
+  const factionGlow=isSat?"rgba(0,170,255,0.15)":isInd?"rgba(204,0,34,0.15)":"rgba(255,20,147,0.15)";
 
   // Hybrid gets dramatic split background
   const cardBg=isHyb
@@ -990,8 +1002,15 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
   const filtered=active==="ALL"?strains:(strains||[]).filter(s=>s.tier===active);
 
   return(
-    <div style={{minHeight:"100vh",background:th.bgDeep,paddingBottom:80}}>
+    <div style={{minHeight:"100vh",background:th.bgDeep,paddingBottom:80,position:"relative",overflow:"hidden"}}>
       <Particles theme={th} count={20}/>
+      {/* ARES — Vault guardian, right side */}
+      <style>{`
+        @keyframes ares-guard{0%,100%{opacity:0.2;transform:translateY(0px)}50%{opacity:0.28;transform:translateY(-10px)}}
+        .ares-vault{position:absolute;right:-3%;top:0;height:85vh;width:auto;object-fit:contain;object-position:top right;opacity:0.22;animation:ares-guard 5s ease-in-out infinite;pointer-events:none;user-select:none;filter:drop-shadow(0 0 50px rgba(255,120,0,0.15));z-index:0;}
+        @media(max-width:768px){.ares-vault{right:unset;left:50%;transform:translateX(-50%);height:45vh;opacity:0.08;top:5%;}}
+      `}</style>
+      <img src={CHARS.ARES} alt="" aria-hidden="true" className="ares-vault"/>
       <div style={{position:"relative",zIndex:1,padding:"100px 5vw 40px"}}>
         <div style={{marginBottom:56}}>
           <div style={{fontSize:10,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.a1}`}}>— The Vault Collection</div>
@@ -1011,6 +1030,7 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
           </div>
         </div>
 
+        {/* Faction operator appears based on strain type filter — future feature placeholder */}
         {active==="ALL"?TIERS.map(tier=>{
           const ts=TIER_S[tier];
           const items=(strains||[]).filter(s=>s.tier===tier);
@@ -1113,6 +1133,18 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
                 objectPosition:"center",
                 display:"block",
               }}/>
+            {/* Faction operator — ghost behind photo, right side */}
+            <img src={factionChar} alt="" aria-hidden="true" style={{
+              position:"absolute",
+              right:"-5%",bottom:0,
+              height:"95%",width:"auto",
+              objectFit:"contain",objectPosition:"bottom right",
+              opacity:0.12,
+              pointerEvents:"none",
+              userSelect:"none",
+              filter:`drop-shadow(0 0 30px ${factionGlow})`,
+              mixBlendMode:"screen",
+            }}/>
             {/* bottom fade */}
             <div style={{position:"absolute",bottom:0,left:0,right:0,height:60,
               background:`linear-gradient(transparent,${th.bgDeep})`,pointerEvents:"none"}}/>
@@ -1478,6 +1510,13 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         <Particles theme={th} count={60}/>
         <div style={{position:"absolute",top:"25%",left:"55%",width:"45vw",height:"45vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}12 0%,transparent 65%)`,pointerEvents:"none"}}/>
         <div style={{position:"absolute",bottom:"20%",left:"5%",width:"30vw",height:"30vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a1}08 0%,transparent 65%)`,pointerEvents:"none"}}/>
+        {/* AZRON — homepage hero, right side desktop, behind text mobile */}
+        <style>{`
+          @keyframes azron-home{0%,100%{opacity:0.18;transform:translateY(0px) scale(1)}50%{opacity:0.24;transform:translateY(-12px) scale(1.01)}}
+          .azron-home{position:absolute;right:-2%;bottom:-2%;height:92vh;width:auto;object-fit:contain;object-position:bottom right;opacity:0.2;animation:azron-home 7s ease-in-out infinite;pointer-events:none;user-select:none;filter:drop-shadow(0 0 60px rgba(255,215,0,0.12));}
+          @media(max-width:768px){.azron-home{right:unset;left:50%;transform:translateX(-50%);height:60vh;opacity:0.07;bottom:10%;}}
+        `}</style>
+        <img src={CHARS.AZRON} alt="" aria-hidden="true" className="azron-home"/>
         <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
@@ -5632,9 +5671,34 @@ export default function App(){
 
   if(!ageOk) return(
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}@keyframes azron-breathe{0%,100%{opacity:0.13;transform:translateY(0px)}50%{opacity:0.18;transform:translateY(-8px)}}@keyframes azron-breathe-mobile{0%,100%{opacity:0.08;transform:translateY(0px)}50%{opacity:0.12;transform:translateY(-6px)}}`}</style>
       <GlobalParticles/>
-      <div style={{position:"fixed",inset:0,background:th.bgDeep,zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32}}>
+      <div style={{position:"fixed",inset:0,background:th.bgDeep,zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,overflow:"hidden"}}>
+        {/* AZRON — age gate guardian, desktop right / mobile behind */}
+        <img src={CHARS.AZRON} alt="" aria-hidden="true" style={{
+          position:"absolute",
+          right:"-5%",bottom:"-5%",
+          height:"90vh",width:"auto",
+          objectFit:"contain",objectPosition:"bottom right",
+          opacity:0.15,
+          animation:"azron-breathe 6s ease-in-out infinite",
+          pointerEvents:"none",
+          userSelect:"none",
+          filter:"drop-shadow(0 0 40px rgba(255,215,0,0.15))",
+        }}/>
+        {/* Mobile AZRON — centered behind content */}
+        <style>{`@media(max-width:640px){.azron-age{right:unset!important;left:50%!important;transform:translateX(-50%)!important;height:70vh!important;opacity:0.08!important;animation:azron-breathe-mobile 6s ease-in-out infinite!important;}}`}</style>
+        <img src={CHARS.AZRON} alt="" aria-hidden="true" className="azron-age" style={{
+          position:"absolute",
+          right:"-5%",bottom:"-5%",
+          height:"90vh",width:"auto",
+          objectFit:"contain",objectPosition:"bottom right",
+          opacity:0.15,
+          animation:"azron-breathe 6s ease-in-out infinite",
+          pointerEvents:"none",
+          userSelect:"none",
+          display:"none",
+        }}/>
         <div style={{position:"relative",zIndex:1,textAlign:"center",maxWidth:400}}>
           <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(44px,10vw,72px)",fontWeight:900,color:th.a1,letterSpacing:"-0.02em",textTransform:"uppercase",textShadow:`0 0 30px ${th.a1},0 0 60px ${th.a1}40`,marginBottom:6}}>GLASSCORP</div>
           <div style={{fontSize:9,letterSpacing:5,color:th.a2,textTransform:"uppercase",marginBottom:44,textShadow:`0 0 10px ${th.a2}`}}>Member Collective</div>
