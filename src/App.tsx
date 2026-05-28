@@ -1628,6 +1628,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
             />
           )}
         </div>
+        </div>{/* end content */}
         {/* bottom bleed into vault */}
         <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:260,background:"linear-gradient(180deg,rgba(6,4,14,0),#06040e)",pointerEvents:"none",zIndex:2}}/>
       </section>
