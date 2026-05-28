@@ -1507,18 +1507,20 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
     <div>
       {/* HERO */}
       <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",backgroundColor:th.bgDeep}}>
-        {/* AZRON — scales to fill every screen size, no cropping, no shifting */}
+        {/* AZRON — cover + right anchored, works all screen sizes */}
         <div style={{position:"absolute",inset:0,
           backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
-          backgroundSize:"100% 100%",
-          backgroundPosition:"center center",
+          backgroundSize:"cover",
+          backgroundPosition:"right center",
           backgroundRepeat:"no-repeat",
           pointerEvents:"none"}}/>
         <Particles theme={th} count={60}/>
-        {/* same overlay on all screens */}
+        {/* dark overlay — same on ALL screens */}
         <div style={{position:"absolute",inset:0,
           background:`linear-gradient(90deg,#080612ee 0%,#080612bb 30%,#08061266 50%,#08061222 65%,transparent 80%)`,
           pointerEvents:"none",zIndex:0}}/>
+        {/* extra dark veil — same level desktop and mobile */}
+        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.35)",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:2}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
