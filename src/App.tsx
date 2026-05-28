@@ -1577,14 +1577,18 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
       {/* FEATURED BATCHES — AZRON's outer chamber with real background */}
       <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 180px",
         background:"#080612"}}>
-        {/* REAL background image */}
+        {/* REAL background image — blurred + darkened */}
         <div style={{position:"absolute",inset:0,
           backgroundImage:`url(${CHARS.FEATURED_BG})`,
           backgroundSize:"cover",
           backgroundPosition:"center center",
           backgroundRepeat:"no-repeat",
-          opacity:0.9,
+          opacity:0.7,
+          filter:"blur(2px)",
+          transform:"scale(1.02)",
           pointerEvents:"none"}}/>
+        {/* dark veil — text readable */}
+        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.55)",pointerEvents:"none"}}/>
         {/* top bleed from hero */}
         <div style={{position:"absolute",top:0,left:0,width:"100%",height:160,
           background:"linear-gradient(180deg,#080612,transparent)",pointerEvents:"none",zIndex:1}}/>
@@ -1644,14 +1648,18 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         @media(max-width:900px){.vault-grid{grid-template-columns:1fr!important;gap:40px!important;}}
       `}</style>
       <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 160px",background:"#06040e"}}>
-        {/* REAL vault background image */}
+        {/* REAL vault background image — blurred + darkened */}
         <div style={{position:"absolute",inset:0,
           backgroundImage:`url(${CHARS.VAULT_BG})`,
           backgroundSize:"cover",
           backgroundPosition:"center right",
           backgroundRepeat:"no-repeat",
-          opacity:0.85,
+          opacity:0.75,
+          filter:"blur(2px)",
+          transform:"scale(1.02)",
           pointerEvents:"none"}}/>
+        {/* dark veil — text readable */}
+        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.5)",pointerEvents:"none"}}/>
         {/* top bleed */}
         <div style={{position:"absolute",top:0,left:0,width:"100%",height:160,background:"linear-gradient(180deg,#06040e,transparent)",pointerEvents:"none",zIndex:1}}/>
         {/* left text area darkener */}
