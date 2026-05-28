@@ -13,6 +13,11 @@ const CHARS = {
   SPARK: "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/SPARK.png",
   DEEP:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/DEEP.png",
   FLUX:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/FLUX.png",
+  FEATURED_BG:      "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/featured-bg.png",
+  VAULT_BG:         "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/vault-bg.png",
+  CRYSTAL_EXOTIC:   "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/crystal-exotic.png",
+  CRYSTAL_PREMIUM:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/crystal-premium.png",
+  CRYSTAL_TOP:      "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/crystal-top.png",
 };
 
 async function sbGet(table, query=""){
@@ -1569,29 +1574,27 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         </div>
       </div>
 
-      {/* FEATURED BATCHES — AZRON's outer chamber */}
-      <style>{`
-        @keyframes torchPulse{0%,100%{opacity:0.45;transform:scale(1)}50%{opacity:0.72;transform:scale(1.08)}}
-        @keyframes torchPulseR{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:0.65;transform:scale(1.06)}}
-      `}</style>
+      {/* FEATURED BATCHES — AZRON's outer chamber with real background */}
       <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 180px",
-        background:"linear-gradient(180deg,#080612 0%,#0d0918 100%)"}}>
+        background:"#080612"}}>
+        {/* REAL background image */}
+        <div style={{position:"absolute",inset:0,
+          backgroundImage:`url(${CHARS.FEATURED_BG})`,
+          backgroundSize:"cover",
+          backgroundPosition:"center center",
+          backgroundRepeat:"no-repeat",
+          opacity:0.9,
+          pointerEvents:"none"}}/>
         {/* top bleed from hero */}
-        <div style={{position:"absolute",top:0,left:0,width:"100%",height:180,background:"linear-gradient(180deg,#080612,transparent)",pointerEvents:"none",zIndex:1}}/>
-        {/* purple ambient */}
-        <div style={{position:"absolute",top:"-15%",right:"-10%",width:"min(700px,60vw)",height:"min(700px,60vw)",background:"radial-gradient(circle,rgba(123,47,255,0.16) 0%,transparent 70%)",pointerEvents:"none",zIndex:1}}/>
-        {/* LEFT PILLAR */}
-        <div style={{position:"absolute",left:"-80px",top:0,width:260,height:"100%",background:"linear-gradient(to right,rgba(0,0,0,0) 0%,rgba(21,16,34,0.92) 40%,rgba(10,8,18,0.98) 100%)",borderRight:"1px solid rgba(232,160,32,0.08)",zIndex:1,pointerEvents:"none"}}>
-          <div style={{position:"absolute",top:"15%",left:"70%",width:2,height:"65%",background:"linear-gradient(180deg,rgba(232,160,32,0),rgba(232,160,32,0.6),rgba(232,160,32,0))",opacity:0.4}}/>
-          <div style={{position:"absolute",top:120,left:120,width:180,height:180,borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.18) 0%,transparent 70%)",opacity:0.6,animation:"torchPulse 4s ease-in-out infinite"}}/>
-        </div>
-        {/* RIGHT PILLAR */}
-        <div style={{position:"absolute",right:"-80px",top:0,width:260,height:"100%",background:"linear-gradient(to left,rgba(0,0,0,0) 0%,rgba(21,16,34,0.92) 40%,rgba(10,8,18,0.98) 100%)",borderLeft:"1px solid rgba(232,160,32,0.08)",zIndex:1,pointerEvents:"none"}}>
-          <div style={{position:"absolute",top:"20%",right:"70%",width:2,height:"60%",background:"linear-gradient(180deg,rgba(232,160,32,0),rgba(232,160,32,0.5),rgba(232,160,32,0))",opacity:0.35}}/>
-          <div style={{position:"absolute",top:160,right:120,width:180,height:180,borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.16) 0%,transparent 70%)",opacity:0.55,animation:"torchPulseR 5s ease-in-out infinite"}}/>
-        </div>
-        {/* stone texture */}
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px)",backgroundSize:"100% 12px",opacity:0.15,pointerEvents:"none",zIndex:1}}/>
+        <div style={{position:"absolute",top:0,left:0,width:"100%",height:160,
+          background:"linear-gradient(180deg,#080612,transparent)",pointerEvents:"none",zIndex:1}}/>
+        {/* bottom bleed into vault */}
+        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:160,
+          background:"linear-gradient(180deg,transparent,#06040e)",pointerEvents:"none",zIndex:1}}/>
+        {/* center dark overlay so cards stay readable */}
+        <div style={{position:"absolute",inset:0,
+          background:"linear-gradient(90deg,rgba(8,6,18,0.3) 0%,rgba(8,6,18,0.1) 30%,rgba(8,6,18,0.1) 70%,rgba(8,6,18,0.3) 100%)",
+          pointerEvents:"none",zIndex:1}}/>
         {/* CONTENT */}
         <div style={{position:"relative",zIndex:2,maxWidth:1400,margin:"0 auto"}}>
           {/* section header */}
@@ -1602,7 +1605,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
             </h2>
             <p style={{marginTop:20,color:"#b7aacd",letterSpacing:"0.22em",fontSize:13,opacity:0.7}}>HAND SELECTED · SPIRIT APPROVED</p>
           </div>
-          {/* card grid — existing StrainCards */}
+          {/* card grid */}
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:24}}>
             <GBtn onClick={onShelf} color={th.border} outline>{t.visitShelf} →</GBtn>
           </div>
@@ -1633,111 +1636,74 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:260,background:"linear-gradient(180deg,rgba(6,4,14,0),#06040e)",pointerEvents:"none",zIndex:2}}/>
       </section>
 
-      {/* THE VAULT — AZRON's sacred cave entrance */}
+      {/* THE VAULT — AZRON's sacred cave entrance with real images */}
       <style>{`
-        @keyframes floatCrystal{0%,100%{transform:translateY(0px)}50%{transform:translateY(-18px)}}
-        @keyframes floatCrystal2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-14px)}}
-        @keyframes floatCrystal3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-16px)}}
-        @keyframes vaultTorch{0%,100%{opacity:0.45;transform:scale(1)}50%{opacity:0.72;transform:scale(1.08)}}
-        @media(max-width:900px){.vault-grid{grid-template-columns:1fr!important;}}
+        @keyframes floatCrystal{0%,100%{transform:translateY(0px)}50%{transform:translateY(-20px)}}
+        @keyframes floatCrystal2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-15px)}}
+        @keyframes floatCrystal3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-18px)}}
+        @media(max-width:900px){.vault-grid{grid-template-columns:1fr!important;gap:40px!important;}}
       `}</style>
-      <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"180px 5vw",
-        background:"linear-gradient(180deg,#06040e 0%,#080612 100%)"}}>
+      <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 160px",background:"#06040e"}}>
+        {/* REAL vault background image */}
+        <div style={{position:"absolute",inset:0,
+          backgroundImage:`url(${CHARS.VAULT_BG})`,
+          backgroundSize:"cover",
+          backgroundPosition:"center right",
+          backgroundRepeat:"no-repeat",
+          opacity:0.85,
+          pointerEvents:"none"}}/>
         {/* top bleed */}
-        <div style={{position:"absolute",top:0,left:0,width:"100%",height:220,background:"linear-gradient(180deg,rgba(6,4,14,0),#06040e)",pointerEvents:"none",zIndex:1}}/>
-        {/* purple atmosphere */}
-        <div style={{position:"absolute",top:"-10%",right:"-5%",width:"min(800px,65vw)",height:"min(800px,65vw)",background:"radial-gradient(circle,rgba(123,47,255,0.14) 0%,transparent 72%)",opacity:0.75,pointerEvents:"none",zIndex:1}}/>
-        {/* gold ambient */}
-        <div style={{position:"absolute",bottom:"-20%",left:"50%",transform:"translateX(-50%)",width:"min(700px,60vw)",height:"min(500px,40vw)",background:"radial-gradient(circle,rgba(232,160,32,0.12) 0%,transparent 70%)",opacity:0.45,pointerEvents:"none",zIndex:1}}/>
+        <div style={{position:"absolute",top:0,left:0,width:"100%",height:160,background:"linear-gradient(180deg,#06040e,transparent)",pointerEvents:"none",zIndex:1}}/>
+        {/* left text area darkener */}
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(6,4,14,0.7) 0%,rgba(6,4,14,0.4) 40%,rgba(6,4,14,0.1) 60%,transparent 80%)",pointerEvents:"none",zIndex:1}}/>
+        {/* bottom bleed */}
+        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:160,background:"linear-gradient(180deg,transparent,#080612)",pointerEvents:"none",zIndex:1}}/>
+
         {/* CONTENT */}
         <div className="vault-grid" style={{position:"relative",zIndex:2,maxWidth:1400,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"clamp(40px,6vw,80px)",alignItems:"center"}}>
-          {/* LEFT — title + button */}
+
+          {/* LEFT — title + crystals + button */}
           <div style={{position:"relative",zIndex:2}}>
             <div style={{color:"#e8a020",letterSpacing:"0.35em",fontSize:12,marginBottom:18,opacity:0.7}}>◆ AZRON'S SACRED VAULT ◆</div>
-            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#f4d28d",fontSize:"clamp(52px,8vw,120px)",lineHeight:0.95,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase",textShadow:"0 0 24px rgba(232,160,32,0.08)"}}>
+            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#f4d28d",fontSize:"clamp(52px,8vw,120px)",lineHeight:0.95,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase",textShadow:"0 0 40px rgba(232,160,32,0.15)"}}>
               THE VAULT
             </h2>
-            <p style={{marginTop:32,color:"#b7aacd",fontSize:16,lineHeight:1.8,maxWidth:520,opacity:0.82}}>
+            <p style={{marginTop:28,color:"#b7aacd",fontSize:15,lineHeight:1.8,maxWidth:480,opacity:0.82}}>
               Beyond this threshold lies AZRON's hidden treasury — sacred relics suspended inside ancient divine circuitry.
             </p>
-            <button onClick={onShelf}
-              style={{marginTop:42,padding:"18px 36px",border:"1px solid rgba(232,160,32,0.4)",background:"rgba(10,8,18,0.72)",color:"#f4d28d",letterSpacing:"0.18em",fontSize:13,cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,textTransform:"uppercase",transition:"transform 0.35s ease,opacity 0.35s ease",boxShadow:"0 0 30px rgba(232,160,32,0.06)"}}
-              onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.04)";e.currentTarget.style.borderColor="rgba(232,160,32,0.8)";}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.borderColor="rgba(232,160,32,0.4)";}}>
-              ◆ ENTER THE VAULT ◆
-            </button>
-            {/* tier legend */}
-            <div style={{display:"flex",gap:20,marginTop:48,paddingTop:24,borderTop:"1px solid rgba(232,160,32,0.1)"}}>
-              {[["EXOTIC","#e8a020"],["PREMIUM","#7b2fff"],["TOP","#00d4ff"]].map(([label,color])=>(
-                <div key={label} style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:8,height:8,background:color,boxShadow:`0 0 8px ${color}`}}/>
-                  <span style={{fontSize:9,letterSpacing:3,color,textTransform:"uppercase",opacity:0.8}}>{label}</span>
+
+            {/* 3 crystals with labels */}
+            <div style={{display:"flex",gap:32,marginTop:44,alignItems:"flex-end"}}>
+              {[
+                {img:CHARS.CRYSTAL_EXOTIC,label:"EXOTIC",color:"#e8a020",delay:"0s",size:90},
+                {img:CHARS.CRYSTAL_PREMIUM,label:"PREMIUM",color:"#7b2fff",delay:"1.2s",size:80},
+                {img:CHARS.CRYSTAL_TOP,label:"TOP",color:"#00d4ff",delay:"0.6s",size:85},
+              ].map(({img,label,color,delay,size})=>(
+                <div key={label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+                  <img src={img} alt={label}
+                    style={{width:size,height:"auto",objectFit:"contain",
+                      animation:`floatCrystal 6s ease-in-out infinite`,
+                      animationDelay:delay,
+                      filter:`drop-shadow(0 0 12px ${color}60)`,
+                    }}/>
+                  <span style={{fontSize:8,letterSpacing:3,color,textTransform:"uppercase",opacity:0.8}}>{label}</span>
                 </div>
               ))}
             </div>
+
+            <button onClick={onShelf}
+              style={{marginTop:40,padding:"16px 32px",border:"1px solid rgba(232,160,32,0.5)",background:"rgba(6,4,14,0.8)",color:"#f4d28d",letterSpacing:"0.18em",fontSize:12,cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,textTransform:"uppercase",transition:"transform 0.3s ease,border-color 0.3s ease"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.03)";e.currentTarget.style.borderColor="rgba(232,160,32,0.9)";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.borderColor="rgba(232,160,32,0.5)";}}>
+              ◆ ENTER THE VAULT ◆
+            </button>
           </div>
-          {/* RIGHT — arch with crystals */}
-          <div style={{position:"relative",width:"100%",minHeight:"clamp(400px,65vw,760px)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {/* LEFT PILLAR */}
-            <div style={{position:"absolute",left:"8%",bottom:0,width:"clamp(60px,10vw,120px)",height:"85%",background:"linear-gradient(to right,rgba(0,0,0,0.15),rgba(21,16,34,0.98))",borderRight:"1px solid rgba(232,160,32,0.08)",zIndex:1,pointerEvents:"none"}}>
-              <div style={{position:"absolute",top:"12%",left:"70%",width:2,height:"65%",background:"linear-gradient(180deg,rgba(232,160,32,0),rgba(232,160,32,0.6),rgba(232,160,32,0))",opacity:0.35}}/>
-              <div style={{position:"absolute",top:"6%",left:"50%",transform:"translateX(-50%)",width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(156,77,255,0.22) 0%,transparent 70%)",opacity:0.65,animation:"vaultTorch 5s ease-in-out infinite"}}/>
-            </div>
-            {/* RIGHT PILLAR */}
-            <div style={{position:"absolute",right:"8%",bottom:0,width:"clamp(60px,10vw,120px)",height:"85%",background:"linear-gradient(to left,rgba(0,0,0,0.15),rgba(21,16,34,0.98))",borderLeft:"1px solid rgba(232,160,32,0.08)",zIndex:1,pointerEvents:"none"}}>
-              <div style={{position:"absolute",top:"18%",right:"70%",width:2,height:"55%",background:"linear-gradient(180deg,rgba(232,160,32,0),rgba(232,160,32,0.5),rgba(232,160,32,0))",opacity:0.3}}/>
-              <div style={{position:"absolute",top:"8%",left:"50%",transform:"translateX(-50%)",width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(156,77,255,0.18) 0%,transparent 70%)",opacity:0.6,animation:"vaultTorch 6s ease-in-out infinite 1s"}}/>
-            </div>
-            {/* ARCH SVG */}
-            <svg viewBox="0 0 600 900" style={{width:"100%",maxWidth:620,height:"auto",overflow:"visible",position:"relative",zIndex:2}}>
-              <defs>
-                <radialGradient id="vaultDarkness" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="rgba(123,47,255,0.12)"/>
-                  <stop offset="45%" stopColor="rgba(10,8,18,0.95)"/>
-                  <stop offset="100%" stopColor="#000000"/>
-                </radialGradient>
-              </defs>
-              {/* arch outer */}
-              <path d="M120 820 L120 320 Q300 60 480 320 L480 820" fill="rgba(15,10,28,0.94)" stroke="rgba(232,160,32,0.14)" strokeWidth="2"/>
-              {/* inner darkness */}
-              <path d="M180 820 L180 360 Q300 180 420 360 L420 820" fill="url(#vaultDarkness)"/>
-              {/* gold veins left */}
-              <path d="M145 760 Q180 640 170 520 Q185 380 220 240" stroke="rgba(232,160,32,0.45)" strokeWidth="2" fill="none" opacity="0.4"/>
-              {/* gold veins right */}
-              <path d="M455 740 Q420 620 430 500 Q415 360 380 220" stroke="rgba(232,160,32,0.38)" strokeWidth="2" fill="none" opacity="0.35"/>
-              {/* rune marks */}
-              {[160,240,320,400].map((x,i)=>(
-                <g key={i}>
-                  <line x1={x} y1="800" x2={x} y2="820" stroke="rgba(232,160,32,0.2)" strokeWidth="1"/>
-                  <line x1={x-6} y1="808" x2={x+6} y2="808" stroke="rgba(232,160,32,0.2)" strokeWidth="1"/>
-                </g>
-              ))}
-              {/* EXOTIC crystal — gold, center top */}
-              <g style={{animation:"floatCrystal 7s ease-in-out infinite",transformOrigin:"300px 360px"}}>
-                <polygon points="300,300 325,355 300,410 275,355" fill="#e8a020" opacity="0.9"/>
-                <polygon points="300,300 325,355 300,340 275,355" fill="rgba(232,160,32,0.4)" opacity="0.6"/>
-                <circle cx="300" cy="360" r="50" fill="rgba(232,160,32,0.1)"/>
-                <text x="300" y="438" textAnchor="middle" fill="rgba(232,160,32,0.6)" fontSize="9" fontFamily="Inter,sans-serif" letterSpacing="3">EXOTIC</text>
-              </g>
-              {/* PREMIUM crystal — purple, bottom left */}
-              <g style={{animation:"floatCrystal2 9s ease-in-out infinite",transformOrigin:"215px 520px"}}>
-                <polygon points="215,465 240,515 215,565 190,515" fill="#7b2fff" opacity="0.85"/>
-                <polygon points="215,465 240,515 215,498 190,515" fill="rgba(123,47,255,0.4)" opacity="0.6"/>
-                <circle cx="215" cy="518" r="42" fill="rgba(123,47,255,0.1)"/>
-                <text x="215" y="590" textAnchor="middle" fill="rgba(123,47,255,0.6)" fontSize="9" fontFamily="Inter,sans-serif" letterSpacing="3">PREMIUM</text>
-              </g>
-              {/* TOP crystal — cyan, bottom right */}
-              <g style={{animation:"floatCrystal3 8s ease-in-out infinite",transformOrigin:"390px 545px"}}>
-                <polygon points="390,490 415,542 390,594 365,542" fill="#00d4ff" opacity="0.9"/>
-                <polygon points="390,490 415,542 390,525 365,542" fill="rgba(0,212,255,0.4)" opacity="0.6"/>
-                <circle cx="390" cy="544" r="42" fill="rgba(0,212,255,0.1)"/>
-                <text x="390" y="616" textAnchor="middle" fill="rgba(0,212,255,0.6)" fontSize="9" fontFamily="Inter,sans-serif" letterSpacing="3">TOP</text>
-              </g>
-            </svg>
-          </div>
+
+          {/* RIGHT — empty, vault bg image fills this side */}
+          <div style={{position:"relative",minHeight:"clamp(300px,50vw,600px)"}}/>
         </div>
         {/* bottom bleed into GMC */}
-        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:240,background:"linear-gradient(180deg,rgba(8,6,18,0),#080612)",pointerEvents:"none",zIndex:2}}/>
+        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:200,background:"linear-gradient(180deg,transparent,#080612)",pointerEvents:"none",zIndex:2}}/>
       </section>
 
       {/* GMC INFO — AZRON's deepest treasury chamber */}
