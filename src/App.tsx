@@ -1728,72 +1728,76 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </button>
         </div>
 
-        {/* ── GLASSCORP ARENA — bottom center over drape ── */}
+        {/* ── GLASSCORP ARENA — SVG with stone texture ── */}
         <div className="gc-hero-main" style={{
-          position:"absolute",
-          bottom:"5%",
-          left:0,right:0,
-          display:"flex",
-          flexDirection:"column",
-          alignItems:"center",
-          zIndex:4,
-          pointerEvents:"none",
-          paddingBottom:8,
+          position:"absolute",bottom:"3%",left:0,right:0,
+          display:"flex",flexDirection:"column",alignItems:"center",
+          zIndex:4,pointerEvents:"none",
         }}>
-          {/* GLASSCORP — Crystal Steel material, spec exact */}
-          {/* Structure first. Effect second. */}
-          <h1 className="gc-glasscorp" style={{
-            fontFamily:"'Bebas Neue',sans-serif",
-            fontSize:"clamp(48px,8vw,118px)",
-            fontWeight:400,
-            letterSpacing:"0.02em",
-            textTransform:"uppercase",
-            color:"#f2f2f2",
-            margin:0,
-            lineHeight:1,
-            /* Crystal Steel — bright, precise edges, minimal bloom */
-            textShadow:`
-              0 1px 0 rgba(255,255,255,0.15),
-              0 -1px 0 rgba(255,255,255,0.08),
-              0 0 8px rgba(255,255,255,0.06),
-              0 2px 12px rgba(0,0,0,0.8)
-            `,
-          }}>GLASSCORP</h1>
-
-          {/* ARENA — Arcane Energy Glass, spec exact */}
-          <div style={{position:"relative",lineHeight:1,marginTop:-4}}>
-            {/* Soft purple bloom BEHIND — ancient magical reactor, NOT neon */}
-            <div style={{
-              position:"absolute",
-              top:"10%",left:"10%",right:"10%",bottom:"10%",
-              background:"rgba(123,47,255,0.4)",
-              filter:"blur(40px)",
-              opacity:0.6,
-              pointerEvents:"none",
-              zIndex:0,
-            }}/>
-            {/* ARENA — gradient #f2e9ff→#d6b7ff→#a56aff→#7b2fff→#5c1ec9 */}
-            <h1 className="gc-arena-txt" style={{
-              fontFamily:"'Bebas Neue',sans-serif",
-              fontSize:"clamp(46px,7.8vw,114px)",
-              fontWeight:400,
-              letterSpacing:"0.04em",
-              textTransform:"uppercase",
-              margin:0,
-              position:"relative",
-              lineHeight:1,
-              zIndex:1,
-              background:"linear-gradient(180deg,#f2e9ff 0%,#d6b7ff 12%,#a56aff 35%,#7b2fff 65%,#5c1ec9 100%)",
-              WebkitBackgroundClip:"text",
-              WebkitTextFillColor:"transparent",
-              backgroundClip:"text",
-              /* soft glow — ancient, NOT neon */
-              filter:"drop-shadow(0 0 8px rgba(123,47,255,0.4)) drop-shadow(0 0 20px rgba(123,47,255,0.2)) drop-shadow(0 0 40px rgba(123,47,255,0.1))",
-              /* bottom dissolves into atmosphere */
-              WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 65%,rgba(0,0,0,0.3) 85%,rgba(0,0,0,0) 100%)",
-              maskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 65%,rgba(0,0,0,0.3) 85%,rgba(0,0,0,0) 100%)",
-            }}>ARENA</h1>
-          </div>
+          <svg style={{overflow:"visible",width:"min(900px,92vw)",height:"auto"}} viewBox="0 0 900 220">
+            <defs>
+              <filter id="stone-f" x="-5%" y="-5%" width="110%" height="110%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="4" seed="2" result="noise"/>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+                <feBlend in="displaced" in2="SourceGraphic" mode="overlay"/>
+              </filter>
+              <filter id="arena-f" x="-5%" y="-5%" width="110%" height="110%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" seed="8" result="noise"/>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G"/>
+              </filter>
+              <linearGradient id="metal-g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffffff"/>
+                <stop offset="20%" stopColor="#e8e4f0"/>
+                <stop offset="50%" stopColor="#c0b8d0"/>
+                <stop offset="80%" stopColor="#9088a8"/>
+                <stop offset="100%" stopColor="#605878"/>
+              </linearGradient>
+              <linearGradient id="arena-g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f2e9ff"/>
+                <stop offset="12%" stopColor="#d6b7ff"/>
+                <stop offset="35%" stopColor="#a56aff"/>
+                <stop offset="65%" stopColor="#7b2fff"/>
+                <stop offset="100%" stopColor="#3d0d8f"/>
+              </linearGradient>
+              <linearGradient id="fade-g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="white" stopOpacity="1"/>
+                <stop offset="60%" stopColor="white" stopOpacity="1"/>
+                <stop offset="100%" stopColor="white" stopOpacity="0"/>
+              </linearGradient>
+              <mask id="fade-m">
+                <rect x="0" y="100" width="900" height="120" fill="url(#fade-g)"/>
+              </mask>
+            </defs>
+            {/* GLASSCORP — metallic stone texture */}
+            <g filter="url(#stone-f)">
+              <text x="450" y="95" textAnchor="middle"
+                fontFamily="'Bebas Neue',sans-serif" fontSize="108" fontWeight="400" letterSpacing="4"
+                fill="url(#metal-g)">GLASSCORP</text>
+            </g>
+            <text x="450" y="95" textAnchor="middle"
+              fontFamily="'Bebas Neue',sans-serif" fontSize="108" fontWeight="400" letterSpacing="4"
+              fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5">GLASSCORP</text>
+            {/* ARENA — purple energy glass + bloom behind */}
+            <text x="450" y="205" textAnchor="middle"
+              fontFamily="'Bebas Neue',sans-serif" fontSize="104" fontWeight="400" letterSpacing="8"
+              fill="rgba(100,40,220,0.4)"
+              style={{filter:"blur(20px)"}}>ARENA</text>
+            <g mask="url(#fade-m)" filter="url(#arena-f)">
+              <text x="450" y="205" textAnchor="middle"
+                fontFamily="'Bebas Neue',sans-serif" fontSize="104" fontWeight="400" letterSpacing="8"
+                fill="url(#arena-g)">ARENA</text>
+            </g>
+            <g mask="url(#fade-m)">
+              <text x="450" y="205" textAnchor="middle"
+                fontFamily="'Bebas Neue',sans-serif" fontSize="104" fontWeight="400" letterSpacing="8"
+                fill="none" stroke="rgba(180,120,255,0.18)" strokeWidth="0.5">ARENA</text>
+            </g>
+            {/* gold particles */}
+            {([[85,50],[180,15],[320,8],[580,10],[750,38],[855,95],[55,165],[845,185]] as [number,number][]).map(([cx,cy],i)=>(
+              <circle key={i} cx={cx} cy={cy} r={i%2===0?1.5:1}
+                fill="#c8922a" opacity={0.5+Math.sin(i)*0.2}/>
+            ))}
+          </svg>
         </div>
 
       </section>
