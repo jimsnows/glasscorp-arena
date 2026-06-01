@@ -408,10 +408,7 @@ function FluxText({text,active}){
 }
 
 // ── GMC COIN ──
-function GMCCoin({size=24,theme}){
-  // Pure CSS animation — zero JS, zero React re-renders, 100% GPU ✅
-  const uid=useRef("coin"+Math.random().toString(36).slice(2,6)).current;
-  // Inline the keyframe as a data URI approach won't work — inject into document head once
+function GMCCoin({size=24,theme,spin=false}:{size?:number,theme:any,spin?:boolean}){
   if(typeof document!=="undefined"){
     const styleId="gc-coin-style";
     if(!document.getElementById(styleId)){
@@ -427,8 +424,8 @@ function GMCCoin({size=24,theme}){
       background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,
       boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,
       fontSize:size*0.45,flexShrink:0,fontWeight:900,color:"rgba(0,0,0,0.7)",
-      animation:"gc-coin-spin 2.8s ease-in-out infinite",
-      willChange:"transform"}}>
+      animation:spin?"gc-coin-spin 2.8s ease-in-out infinite":"none",
+      willChange:spin?"transform":"auto"}}>
       G
     </span>
   );
@@ -1728,144 +1725,27 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </button>
         </div>
 
-        {/* ── GLASSCORP ARENA — frosted crystal monolith rendering ── */}
-        <style>{`
-          @keyframes gc-light-shaft{0%,100%{opacity:0.06}50%{opacity:0.12}}
-          @keyframes gc-crystal-breathe{0%,100%{opacity:0.85}50%{opacity:1}}
-          .gc-title-wrap{position:relative;display:inline-block;text-align:center;}
-          .gc-crystal-text{
-            font-family:'Bebas Neue',sans-serif;
-            font-weight:400;
-            text-transform:uppercase;
-            position:relative;
-            display:block;
-            line-height:0.92;
-          }
-          /* GLASSCORP — frosted titanium crystal */
-          .gc-glasscorp-crystal{
-            font-size:clamp(52px,9vw,122px);
-            letter-spacing:0.04em;
-            /* cloudy translucent base — NOT chrome, NOT bright white */
-            color:rgba(220,215,235,0.92);
-            /* internal grain via text-shadow stack */
-            text-shadow:
-              0 1px 2px rgba(255,255,255,0.3),
-              0 -1px 1px rgba(0,0,0,0.5),
-              0 2px 8px rgba(0,0,0,0.7),
-              inset 0 0 0 transparent;
-            /* frosted translucency filter */
-            filter:
-              drop-shadow(0 0 1px rgba(255,255,255,0.4))
-              drop-shadow(0 2px 4px rgba(0,0,0,0.8))
-              drop-shadow(0 0 20px rgba(200,180,255,0.08));
-          }
-          /* ARENA — arcane crystal glass, internal purple illumination */
-          .gc-arena-crystal{
-            font-size:clamp(50px,8.8vw,118px);
-            letter-spacing:0.08em;
-            /* crystal glass — translucent purple */
-            background:linear-gradient(
-              180deg,
-              rgba(242,233,255,0.95) 0%,
-              rgba(214,183,255,0.9) 15%,
-              rgba(165,106,255,0.85) 38%,
-              rgba(123,47,255,0.8) 62%,
-              rgba(92,30,201,0.6) 80%,
-              rgba(40,8,100,0) 100%
-            );
-            -webkit-background-clip:text;
-            -webkit-text-fill-color:transparent;
-            background-clip:text;
-            /* edge bloom — soft not harsh */
-            filter:
-              drop-shadow(0 0 6px rgba(123,47,255,0.3))
-              drop-shadow(0 0 18px rgba(123,47,255,0.18))
-              drop-shadow(0 0 40px rgba(123,47,255,0.08));
-            /* bottom dissolve into atmosphere */
-            -webkit-mask-image:linear-gradient(to bottom,
-              rgba(0,0,0,1) 0%,
-              rgba(0,0,0,1) 55%,
-              rgba(0,0,0,0.6) 75%,
-              rgba(0,0,0,0) 100%
-            );
-            mask-image:linear-gradient(to bottom,
-              rgba(0,0,0,1) 0%,
-              rgba(0,0,0,1) 55%,
-              rgba(0,0,0,0.6) 75%,
-              rgba(0,0,0,0) 100%
-            );
-          }
-        `}</style>
-        <div className="gc-hero-main" style={{
-          position:"absolute",bottom:"3%",left:0,right:0,
-          display:"flex",flexDirection:"column",alignItems:"center",
-          zIndex:4,pointerEvents:"none",
+        {/* ── GLASSCORP ARENA — PNG title asset ── */}
+        <div style={{
+          position:"absolute",
+          bottom:"3%",
+          left:0,right:0,
+          display:"flex",
+          flexDirection:"column",
+          alignItems:"center",
+          zIndex:4,
+          pointerEvents:"none",
         }}>
-          <div className="gc-title-wrap">
-
-            {/* GLASSCORP — frosted titanium crystal */}
-            <div style={{position:"relative"}}>
-              {/* vertical light shaft through letters — internal illumination */}
-              <div style={{
-                position:"absolute",
-                top:0,bottom:0,
-                left:"50%",transform:"translateX(-50%)",
-                width:"60%",
-                background:"linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(200,180,255,0.04) 100%)",
-                animation:"gc-light-shaft 4s ease-in-out infinite",
-                pointerEvents:"none",
-                mixBlendMode:"overlay",
-              }}/>
-              <span className="gc-crystal-text gc-glasscorp-crystal">GLASSCORP</span>
-            </div>
-
-            {/* ARENA — arcane crystal glass */}
-            <div style={{position:"relative",marginTop:-2}}>
-              {/* large atmospheric bloom — ancient magical reactor */}
-              <div style={{
-                position:"absolute",
-                inset:"-20% -10%",
-                background:"radial-gradient(ellipse,rgba(100,40,220,0.35) 0%,rgba(80,20,180,0.15) 40%,transparent 70%)",
-                filter:"blur(24px)",
-                pointerEvents:"none",
-                zIndex:0,
-                animation:"gc-crystal-breathe 3s ease-in-out infinite",
-              }}/>
-              {/* subtle vertical energy streaks */}
-              {[20,40,60,80].map((pct,i)=>(
-                <div key={i} style={{
-                  position:"absolute",
-                  top:"10%",bottom:"20%",
-                  left:`${pct}%`,
-                  width:1,
-                  background:"linear-gradient(180deg,transparent,rgba(180,120,255,0.15),transparent)",
-                  animation:`gc-light-shaft ${3+i*0.4}s ease-in-out infinite ${i*0.6}s`,
-                  pointerEvents:"none",
-                }}/>
-              ))}
-              <span className="gc-crystal-text gc-arena-crystal" style={{position:"relative",zIndex:1}}>ARENA</span>
-            </div>
-
-            {/* gold dust particles */}
-            <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
-              {[
-                {top:"8%",left:"4%",size:2},{top:"18%",left:"12%",size:1.5},
-                {top:"5%",right:"6%",size:2},{top:"22%",right:"14%",size:1.5},
-                {top:"45%",left:"2%",size:1},{top:"55%",right:"3%",size:1.5},
-                {top:"30%",left:"8%",size:1},{top:"35%",right:"9%",size:1},
-              ].map(({top,left,right,size},i)=>(
-                <div key={i} style={{
-                  position:"absolute",top,left,right,
-                  width:size,height:size,
-                  borderRadius:"50%",
-                  background:"#c8922a",
-                  boxShadow:`0 0 ${size*3}px rgba(200,146,42,0.6)`,
-                  opacity:0.5+Math.sin(i)*0.2,
-                }}/>
-              ))}
-            </div>
-
-          </div>
+          <img
+            src="https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/glasscorp%20arena%20txt.png"
+            alt="Glasscorp Arena"
+            style={{
+              width:"min(820px,88vw)",
+              height:"auto",
+              objectFit:"contain",
+              display:"block",
+            }}
+          />
         </div>
 
       </section>
@@ -2047,7 +1927,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           <div style={{background:th.bgCard,border:`1px solid ${th.amber}40`,padding:"56px 36px",textAlign:"center",boxShadow:`0 0 40px ${th.amber}10`,position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"150%",height:"150%",borderRadius:"50%",background:`radial-gradient(circle,${th.amber}08 0%,transparent 60%)`,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
-              <GMCCoin size={80} theme={{amber:"#c8922a"}}/>
+              <GMCCoin size={80} theme={{amber:"#c8922a"}} spin={true}/>
               <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(48px,8vw,80px)",fontWeight:900,color:"#c8922a",lineHeight:0.9,letterSpacing:"-0.04em",textShadow:"0 0 40px rgba(232,160,32,0.8)",marginTop:20}}>GMC</div>
               <div style={{fontSize:11,letterSpacing:4,color:th.dim,textTransform:"uppercase",marginTop:12}}>Glasscorp Member Credit</div>
               <div style={{width:"100%",height:1,background:`linear-gradient(90deg,transparent,${th.amber},transparent)`,margin:"20px 0"}}/>
