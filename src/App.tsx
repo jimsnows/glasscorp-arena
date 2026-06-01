@@ -1554,16 +1554,8 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
       <style>{`
         @keyframes marqueeAnim{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-        /* ARENA gradient text */
-        .gc-arena{
-          background:linear-gradient(180deg,#f2e9ff 0%,#d6b7ff 12%,#a56aff 35%,#7b2fff 65%,#5c1ec9 100%);
-          -webkit-background-clip:text;
-          -webkit-text-fill-color:transparent;
-          background-clip:text;
-          text-shadow:none;
-          -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 70%,rgba(0,0,0,0) 100%);
-          mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 70%,rgba(0,0,0,0) 100%);
-        }
+        /* ARENA — handled inline now */
+        .gc-arena{}
 
         /* buttons */
         .gc-btn-vault{
@@ -1634,9 +1626,9 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           backgroundRepeat:"no-repeat",
           pointerEvents:"none"}}/>
 
-        {/* LAYER 2 — responsive UI gradient */}
+        {/* LAYER 2 — dark veil, let AZRON breathe */}
         <div style={{position:"absolute",inset:0,
-          background:"linear-gradient(90deg,rgba(8,6,18,0.95) 0%,rgba(8,6,18,0.75) 30%,rgba(8,6,18,0.25) 60%,rgba(8,6,18,0) 100%)",
+          background:"linear-gradient(180deg,rgba(8,6,18,0.3) 0%,rgba(8,6,18,0.1) 40%,rgba(8,6,18,0.5) 100%)",
           pointerEvents:"none"}}/>
 
         {/* LAYER 3 — purple atmosphere center */}
@@ -1708,96 +1700,85 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </span>
         </div>
 
-        {/* ── MAIN UI LAYER ── */}
-        <div className="gc-hero-ui" style={{
-          position:"absolute",inset:0,
-          display:"flex",flexDirection:"column",
-          justifyContent:"center",
-          padding:"0 5vw",
-          zIndex:2,
-          maxWidth:580,
+        {/* ── BUTTONS — left side, near AZRON's offering hand ── */}
+        <div style={{
+          position:"absolute",
+          left:"8%",
+          top:"42%",
+          transform:"translateY(-50%)",
+          display:"flex",
+          flexDirection:"column",
+          gap:14,
+          zIndex:4,
         }}>
-          <div className="gc-hero-text" style={{display:"flex",flexDirection:"column",alignItems:"flex-start"}}>
+          <button className="gc-btn-vault" onClick={onShelf}>{t.visitShelf}</button>
+          <button className="gc-btn-gmc" onClick={onRedeem}>{t.redeemGMC}</button>
+        </div>
 
-            {/* GLASSCORP */}
-            <h1 className="gc-glasscorp" style={{
+        {/* ── GLASSCORP ARENA — bottom center over drape ── */}
+        <div style={{
+          position:"absolute",
+          bottom:"8%",
+          left:0,right:0,
+          display:"flex",
+          flexDirection:"column",
+          alignItems:"center",
+          zIndex:4,
+          pointerEvents:"none",
+        }}>
+          {/* GLASSCORP — metallic silver stone */}
+          <div style={{position:"relative",lineHeight:0.9}}>
+            {/* purple glow BEHIND the text — not on it */}
+            <div style={{
+              position:"absolute",inset:0,
+              background:"rgba(123,47,255,0.4)",
+              filter:"blur(40px)",
+              transform:"scale(1.3) translateY(10%)",
+              pointerEvents:"none",
+            }}/>
+            <h1 style={{
               fontFamily:"'Inter',sans-serif",
-              fontSize:"clamp(52px,7vw,108px)",
-              fontWeight:900,
-              letterSpacing:"-0.03em",
-              color:"#f2f2f2",
-              textTransform:"uppercase",
-              lineHeight:0.92,
-              margin:0,
-              textShadow:"0 0 10px rgba(255,255,255,0.08),0 0 30px rgba(255,255,255,0.04)",
-            }}>GLASSCORP</h1>
-
-            {/* ARENA — gradient + glow layer + bottom fade */}
-            <div className="gc-arena-wrap" style={{
-              position:"relative",
-              fontSize:"clamp(50px,6.8vw,104px)",
+              fontSize:"clamp(52px,8vw,120px)",
               fontWeight:900,
               letterSpacing:"-0.02em",
               textTransform:"uppercase",
-              lineHeight:0.92,
-              marginBottom:24,
-            }}>
-              {/* glow layer behind text */}
-              <div style={{
-                position:"absolute",inset:0,
-                background:"rgba(123,47,255,0.55)",
-                filter:"blur(30px)",
-                opacity:0.55,
-                transform:"scale(1.2)",
-                pointerEvents:"none",
-              }}/>
-              <span className="gc-arena" style={{
-                fontFamily:"'Inter',sans-serif",
-                fontWeight:900,
-                letterSpacing:"-0.02em",
-                textTransform:"uppercase",
-                position:"relative",
-              }}>ARENA</span>
-            </div>
+              margin:0,
+              position:"relative",
+              background:"linear-gradient(180deg,#ffffff 0%,#d4cfe8 30%,#a8a0c8 65%,#6a6088 100%)",
+              WebkitBackgroundClip:"text",
+              WebkitTextFillColor:"transparent",
+              backgroundClip:"text",
+              filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.9)) drop-shadow(0 0 20px rgba(123,47,255,0.3))",
+            }}>GLASSCORP</h1>
+          </div>
 
-            {/* description */}
-            <p className="gc-hero-desc" style={{
-              fontSize:13,
-              color:"#bdb8c9",
-              maxWidth:400,
-              lineHeight:1.9,
-              marginBottom:32,
+          {/* ARENA — darker stone, heavier, purple glow behind */}
+          <div style={{position:"relative",lineHeight:0.9,marginTop:4}}>
+            {/* strong purple glow layer behind */}
+            <div style={{
+              position:"absolute",inset:0,
+              background:"rgba(90,29,207,0.7)",
+              filter:"blur(35px)",
+              transform:"scale(1.4) translateY(5%)",
+              pointerEvents:"none",
+            }}/>
+            <h1 style={{
               fontFamily:"'Inter',sans-serif",
-              opacity:0.9,
-            }}>{t.heroDesc}</p>
-
-            {/* buttons */}
-            <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:44}}>
-              <button className="gc-btn-vault" onClick={onShelf}>{t.visitShelf}</button>
-              <button className="gc-btn-gmc" onClick={onRedeem}>{t.redeemGMC}</button>
-            </div>
-
-            {/* stats */}
-            <div className="gc-stats" style={{
-              display:"flex",gap:32,
-              paddingTop:20,
-              borderTop:"1px solid rgba(200,146,42,0.15)",
-            }}>
-              {[["80+","Batches"],["GMC","Token"],["1-2hr","Portal"]].map(([n,l])=>(
-                <div key={l}>
-                  <div style={{
-                    fontFamily:"'Inter',sans-serif",
-                    fontSize:"clamp(18px,2.5vw,28px)",
-                    fontWeight:900,
-                    color:"#00d4ff",
-                    lineHeight:1,
-                    textShadow:"0 0 12px rgba(0,212,255,0.5)",
-                  }}>{n}</div>
-                  <div style={{fontSize:8,letterSpacing:"0.2em",color:"#7a7090",textTransform:"uppercase",marginTop:3,fontFamily:"'Inter',sans-serif"}}>{l}</div>
-                </div>
-              ))}
-            </div>
-
+              fontSize:"clamp(50px,7.8vw,116px)",
+              fontWeight:900,
+              letterSpacing:"-0.01em",
+              textTransform:"uppercase",
+              margin:0,
+              position:"relative",
+              /* metallic stone — silver with deep shadow, fades to dark bottom */
+              background:"linear-gradient(180deg,#c8b8e8 0%,#9878cc 25%,#6040a8 55%,#2d1060 80%,#0a0020 100%)",
+              WebkitBackgroundClip:"text",
+              WebkitTextFillColor:"transparent",
+              backgroundClip:"text",
+              WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 60%,rgba(0,0,0,0) 100%)",
+              maskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 60%,rgba(0,0,0,0) 100%)",
+              filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.95))",
+            }}>ARENA</h1>
           </div>
         </div>
 
