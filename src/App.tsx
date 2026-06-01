@@ -1554,10 +1554,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
       <style>{`
         @keyframes marqueeAnim{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-        /* ARENA — handled inline now */
-        .gc-arena{}
-
-        /* buttons */
+        /* ── BUTTONS — exact from spec ── */
         .gc-btn-vault{
           padding:14px 32px;
           border:1px solid #00d4ff;
@@ -1566,14 +1563,16 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           cursor:pointer;
           font-family:'Inter',sans-serif;
           font-weight:700;
-          font-size:11px;
-          letter-spacing:3px;
+          font-size:14px;
+          letter-spacing:0.15em;
           text-transform:uppercase;
-          transition:transform 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;
+          transition:all 0.3s ease;
+          border-radius:2px;
+          box-shadow:0 0 12px rgba(0,212,255,0.12);
         }
         .gc-btn-vault:hover{
           transform:translateY(-2px);
-          box-shadow:0 0 20px rgba(0,212,255,0.22),0 0 40px rgba(0,212,255,0.1);
+          box-shadow:0 0 20px rgba(0,212,255,0.22);
           background:rgba(8,6,18,0.75);
         }
         .gc-btn-gmc{
@@ -1584,35 +1583,37 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           cursor:pointer;
           font-family:'Inter',sans-serif;
           font-weight:700;
-          font-size:11px;
-          letter-spacing:3px;
+          font-size:14px;
+          letter-spacing:0.15em;
           text-transform:uppercase;
-          transition:transform 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;
+          transition:all 0.3s ease;
+          border-radius:2px;
+          box-shadow:0 0 12px rgba(200,146,42,0.12);
         }
         .gc-btn-gmc:hover{
           transform:translateY(-2px);
-          box-shadow:0 0 20px rgba(200,146,42,0.22),0 0 40px rgba(200,146,42,0.1);
+          box-shadow:0 0 20px rgba(200,146,42,0.22);
           background:rgba(8,6,18,0.75);
         }
 
-        /* responsive */
-        @media(max-width:1024px){
-          .gc-hero-ui{
-            align-items:center!important;
-            justify-content:flex-end!important;
-            padding-bottom:8vh!important;
-          }
-          .gc-hero-text{text-align:center!important;align-items:center!important;}
-          .gc-glasscorp{font-size:clamp(48px,10vw,88px)!important;}
-          .gc-arena-wrap{font-size:clamp(44px,9vw,80px)!important;}
+        /* ── RESPONSIVE — exact from spec ── */
+        @media(min-width:1440px){
+          .gc-hero-main{left:5%!important;bottom:10%!important;}
+          .gc-hero-btns{left:8%!important;top:45%!important;}
         }
-        @media(max-width:640px){
-          .gc-glasscorp{font-size:clamp(40px,13vw,72px)!important;}
-          .gc-arena-wrap{font-size:clamp(36px,12vw,64px)!important;}
-          .gc-hero-desc{display:none!important;}
+        @media(max-width:1439px) and (min-width:768px){
+          .gc-hero-main{left:50%!important;transform:translateX(-50%)!important;bottom:8%!important;align-items:center!important;text-align:center!important;}
+          .gc-hero-btns{left:50%!important;top:auto!important;bottom:28%!important;transform:translateX(-50%)!important;align-items:center!important;}
           .gc-corner-tr{display:none!important;}
           .gc-corner-br{display:none!important;}
-          .gc-stats{gap:20px!important;}
+        }
+        @media(max-width:767px){
+          .gc-hero-main{left:50%!important;transform:translateX(-50%)!important;bottom:6%!important;align-items:center!important;text-align:center!important;}
+          .gc-hero-btns{left:50%!important;top:auto!important;bottom:32%!important;transform:translateX(-50%)!important;align-items:center!important;}
+          .gc-glasscorp{font-size:clamp(36px,12vw,64px)!important;}
+          .gc-arena-txt{font-size:clamp(34px,11vw,60px)!important;}
+          .gc-corner-tr{display:none!important;}
+          .gc-corner-br{display:none!important;}
         }
       `}</style>
 
@@ -1626,9 +1627,9 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           backgroundRepeat:"no-repeat",
           pointerEvents:"none"}}/>
 
-        {/* LAYER 2 — dark veil, let AZRON breathe */}
+        {/* LAYER 2 — responsive UI gradient, exact from spec */}
         <div style={{position:"absolute",inset:0,
-          background:"linear-gradient(180deg,rgba(8,6,18,0.3) 0%,rgba(8,6,18,0.1) 40%,rgba(8,6,18,0.5) 100%)",
+          background:"linear-gradient(90deg,rgba(8,6,18,0.95) 0%,rgba(8,6,18,0.75) 30%,rgba(8,6,18,0.25) 60%,rgba(8,6,18,0) 100%)",
           pointerEvents:"none"}}/>
 
         {/* LAYER 3 — purple atmosphere center */}
@@ -1650,7 +1651,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         <div style={{position:"absolute",top:24,left:28,zIndex:3,pointerEvents:"none"}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{width:5,height:5,background:"#c8922a",opacity:0.8,transform:"rotate(45deg)"}}/>
-            <span style={{fontSize:9,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:500}}>
+            <span style={{fontSize:12,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
               RARE BATCHES · REAL UPGRADES
             </span>
           </div>
@@ -1663,7 +1664,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         {/* top right */}
         <div className="gc-corner-tr" style={{position:"absolute",top:24,right:28,zIndex:3,pointerEvents:"none",textAlign:"right"}}>
           <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
-            <span style={{fontSize:9,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:500}}>
+            <span style={{fontSize:12,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
               MEMBER COLLECTIVE
             </span>
             <div style={{width:5,height:5,background:"#c8922a",opacity:0.8,transform:"rotate(45deg)"}}/>
@@ -1682,7 +1683,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
             </div>
             <div style={{width:80,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.3),transparent)"}}/>
           </div>
-          <span style={{fontSize:8,letterSpacing:"0.25em",color:"#bdb8c9",opacity:0.5,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",lineHeight:1.8,display:"block"}}>
+          <span style={{fontSize:11,letterSpacing:"0.25em",color:"#bdb8c9",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",lineHeight:1.8,display:"block"}}>
             THE EXCLUSIVE GUILD<br/>FOR THE DISCERNING COLLECTOR
           </span>
         </div>
@@ -1695,16 +1696,16 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
               <div style={{width:4,height:4,background:"rgba(200,146,42,0.5)"}}/>
             </div>
           </div>
-          <span style={{fontSize:9,letterSpacing:"0.25em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
+          <span style={{fontSize:11,letterSpacing:"0.25em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
             EST. 2024
           </span>
         </div>
 
-        {/* ── BUTTONS — left side, near AZRON's offering hand ── */}
-        <div style={{
+        {/* ── BUTTONS — left side stacked, near AZRON's offering hand ── */}
+        <div className="gc-hero-btns" style={{
           position:"absolute",
           left:"8%",
-          top:"42%",
+          top:"45%",
           transform:"translateY(-50%)",
           display:"flex",
           flexDirection:"column",
@@ -1715,8 +1716,8 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           <button className="gc-btn-gmc" onClick={onRedeem}>{t.redeemGMC}</button>
         </div>
 
-        {/* ── GLASSCORP ARENA — bottom center over drape ── */}
-        <div style={{
+        {/* ── GLASSCORP ARENA — bottom center, exact spec ── */}
+        <div className="gc-hero-main" style={{
           position:"absolute",
           bottom:"8%",
           left:0,right:0,
@@ -1726,58 +1727,51 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           zIndex:4,
           pointerEvents:"none",
         }}>
-          {/* GLASSCORP — metallic silver stone */}
-          <div style={{position:"relative",lineHeight:0.9}}>
-            {/* purple glow BEHIND the text — not on it */}
+          {/* GLASSCORP — Bebas Neue, white, exact text-shadow from spec */}
+          <h1 className="gc-glasscorp" style={{
+            fontFamily:"'Bebas Neue',sans-serif",
+            fontSize:"clamp(52px,8vw,120px)",
+            fontWeight:900,
+            letterSpacing:"-0.03em",
+            textTransform:"uppercase",
+            color:"#f2f2f2",
+            margin:0,
+            lineHeight:0.95,
+            textShadow:"0 0 10px rgba(255,255,255,0.08),0 0 30px rgba(255,255,255,0.04)",
+          }}>GLASSCORP</h1>
+
+          {/* ARENA — Bebas Neue, purple gradient, glow, bottom fade — exact spec */}
+          <div style={{position:"relative",lineHeight:0.95,marginTop:2}}>
+            {/* Extra glow layer BEHIND text — exact from spec */}
             <div style={{
-              position:"absolute",inset:0,
-              background:"rgba(123,47,255,0.4)",
-              filter:"blur(40px)",
-              transform:"scale(1.3) translateY(10%)",
+              position:"absolute",
+              inset:0,
+              background:"rgba(123,47,255,0.55)",
+              filter:"blur(30px)",
+              opacity:0.55,
+              transform:"scale(1.2)",
               pointerEvents:"none",
             }}/>
-            <h1 style={{
-              fontFamily:"'Inter',sans-serif",
-              fontSize:"clamp(52px,8vw,120px)",
+            {/* ARENA text — gradient + glow + bottom fade mask */}
+            <h1 className="gc-arena-txt" style={{
+              fontFamily:"'Bebas Neue',sans-serif",
+              fontSize:"clamp(50px,7.8vw,116px)",
               fontWeight:900,
               letterSpacing:"-0.02em",
               textTransform:"uppercase",
               margin:0,
               position:"relative",
-              background:"linear-gradient(180deg,#ffffff 0%,#d4cfe8 30%,#a8a0c8 65%,#6a6088 100%)",
+              lineHeight:0.95,
+              /* exact gradient from spec */
+              background:"linear-gradient(180deg,#f2e9ff 0%,#d6b7ff 12%,#a56aff 35%,#7b2fff 65%,#5c1ec9 100%)",
               WebkitBackgroundClip:"text",
               WebkitTextFillColor:"transparent",
               backgroundClip:"text",
-              filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.9)) drop-shadow(0 0 20px rgba(123,47,255,0.3))",
-            }}>GLASSCORP</h1>
-          </div>
-
-          {/* ARENA — darker stone, heavier, purple glow behind */}
-          <div style={{position:"relative",lineHeight:0.9,marginTop:4}}>
-            {/* strong purple glow layer behind */}
-            <div style={{
-              position:"absolute",inset:0,
-              background:"rgba(90,29,207,0.7)",
-              filter:"blur(35px)",
-              transform:"scale(1.4) translateY(5%)",
-              pointerEvents:"none",
-            }}/>
-            <h1 style={{
-              fontFamily:"'Inter',sans-serif",
-              fontSize:"clamp(50px,7.8vw,116px)",
-              fontWeight:900,
-              letterSpacing:"-0.01em",
-              textTransform:"uppercase",
-              margin:0,
-              position:"relative",
-              /* metallic stone — silver with deep shadow, fades to dark bottom */
-              background:"linear-gradient(180deg,#c8b8e8 0%,#9878cc 25%,#6040a8 55%,#2d1060 80%,#0a0020 100%)",
-              WebkitBackgroundClip:"text",
-              WebkitTextFillColor:"transparent",
-              backgroundClip:"text",
-              WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 60%,rgba(0,0,0,0) 100%)",
-              maskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 60%,rgba(0,0,0,0) 100%)",
-              filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.95))",
+              /* exact glow from spec */
+              filter:"drop-shadow(0 0 12px rgba(123,47,255,0.35)) drop-shadow(0 0 25px rgba(123,47,255,0.25)) drop-shadow(0 0 50px rgba(123,47,255,0.15))",
+              /* exact bottom fade mask from spec */
+              WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 76%,rgba(0,0,0,0) 100%)",
+              maskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 76%,rgba(0,0,0,0) 100%)",
             }}>ARENA</h1>
           </div>
         </div>
@@ -5983,7 +5977,7 @@ export default function App(){
 
   if(!ageOk) return(
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}@keyframes azron-breathe{0%,100%{opacity:0.13;transform:translateY(0px)}50%{opacity:0.18;transform:translateY(-8px)}}@keyframes azron-breathe-mobile{0%,100%{opacity:0.08;transform:translateY(0px)}50%{opacity:0.12;transform:translateY(-6px)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&family=Bebas+Neue&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}@keyframes azron-breathe{0%,100%{opacity:0.13;transform:translateY(0px)}50%{opacity:0.18;transform:translateY(-8px)}}@keyframes azron-breathe-mobile{0%,100%{opacity:0.08;transform:translateY(0px)}50%{opacity:0.12;transform:translateY(-6px)}}`}</style>
       <GlobalParticles/>
       <div style={{position:"fixed",inset:0,background:th.bgDeep,zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,overflow:"hidden"}}>
         {/* AZRON — age gate guardian, desktop right / mobile behind */}
