@@ -1627,23 +1627,25 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           backgroundRepeat:"no-repeat",
           pointerEvents:"none"}}/>
 
-        {/* LAYER 2 — responsive UI gradient, exact from spec */}
+        {/* LAYER 2 — darkness that lets AZRON emerge */}
         <div style={{position:"absolute",inset:0,
-          background:"linear-gradient(90deg,rgba(8,6,18,0.95) 0%,rgba(8,6,18,0.75) 30%,rgba(8,6,18,0.25) 60%,rgba(8,6,18,0) 100%)",
+          background:"linear-gradient(180deg,rgba(8,6,18,0.55) 0%,rgba(8,6,18,0.2) 40%,rgba(8,6,18,0.6) 100%)",
           pointerEvents:"none"}}/>
 
-        {/* LAYER 3 — purple atmosphere center */}
+        {/* LAYER 3 — very subtle purple atmosphere, NOT dominant */}
         <div style={{position:"absolute",inset:0,
-          background:"radial-gradient(circle at center,rgba(123,47,255,0.18) 0%,transparent 60%)",
+          background:"radial-gradient(circle at 50% 35%,rgba(123,47,255,0.08) 0%,transparent 55%)",
           pointerEvents:"none"}}/>
 
-        {/* LAYER 4 — vignette */}
+        {/* LAYER 4 — vignette edges */}
         <div style={{position:"absolute",inset:0,
-          background:"radial-gradient(circle,transparent 55%,rgba(0,0,0,0.45) 100%)",
+          background:"radial-gradient(circle at 50% 40%,transparent 40%,rgba(0,0,0,0.6) 100%)",
           pointerEvents:"none"}}/>
 
-        {/* LAYER 5 — subtle dark overlay */}
-        <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.06)",pointerEvents:"none"}}/>
+        {/* LAYER 5 — bottom darkness for text readability */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:"35%",
+          background:"linear-gradient(to bottom,transparent,rgba(8,6,18,0.7))",
+          pointerEvents:"none"}}/>
 
         {/* ── CORNER DECORATIONS ── */}
 
@@ -1701,77 +1703,95 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </span>
         </div>
 
-        {/* ── BUTTONS — left side stacked, near AZRON's offering hand ── */}
+        {/* ── BUTTONS — left side, near AZRON's offering hand ── */}
         <div className="gc-hero-btns" style={{
           position:"absolute",
-          left:"8%",
-          top:"45%",
+          left:"5%",
+          top:"48%",
           transform:"translateY(-50%)",
           display:"flex",
           flexDirection:"column",
-          gap:14,
+          gap:12,
           zIndex:4,
         }}>
-          <button className="gc-btn-vault" onClick={onShelf}>{t.visitShelf}</button>
-          <button className="gc-btn-gmc" onClick={onRedeem}>{t.redeemGMC}</button>
+          <button className="gc-btn-vault" onClick={onShelf}
+            style={{padding:"12px 24px",border:"1px solid #00d4ff",background:"rgba(8,6,18,0.55)",color:"#00d4ff",cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:11,letterSpacing:"0.15em",textTransform:"uppercase",transition:"all 0.3s ease",boxShadow:"0 0 12px rgba(0,212,255,0.12)"}}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 20px rgba(0,212,255,0.3)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 12px rgba(0,212,255,0.12)";}}>
+            {t.visitShelf}
+          </button>
+          <button className="gc-btn-gmc" onClick={onRedeem}
+            style={{padding:"12px 24px",border:"1px solid #c8922a",background:"rgba(8,6,18,0.55)",color:"#c8922a",cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:11,letterSpacing:"0.15em",textTransform:"uppercase",transition:"all 0.3s ease",boxShadow:"0 0 12px rgba(200,146,42,0.12)"}}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 20px rgba(200,146,42,0.3)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 12px rgba(200,146,42,0.12)";}}>
+            {t.redeemGMC}
+          </button>
         </div>
 
-        {/* ── GLASSCORP ARENA — bottom center, exact spec ── */}
+        {/* ── GLASSCORP ARENA — bottom center over drape ── */}
         <div className="gc-hero-main" style={{
           position:"absolute",
-          bottom:"8%",
+          bottom:"5%",
           left:0,right:0,
           display:"flex",
           flexDirection:"column",
           alignItems:"center",
           zIndex:4,
           pointerEvents:"none",
+          paddingBottom:8,
         }}>
-          {/* GLASSCORP — Bebas Neue, white, exact text-shadow from spec */}
+          {/* GLASSCORP — Crystal Steel material, spec exact */}
+          {/* Structure first. Effect second. */}
           <h1 className="gc-glasscorp" style={{
             fontFamily:"'Bebas Neue',sans-serif",
-            fontSize:"clamp(52px,8vw,120px)",
-            fontWeight:900,
-            letterSpacing:"-0.03em",
+            fontSize:"clamp(48px,8vw,118px)",
+            fontWeight:400,
+            letterSpacing:"0.02em",
             textTransform:"uppercase",
             color:"#f2f2f2",
             margin:0,
-            lineHeight:0.95,
-            textShadow:"0 0 10px rgba(255,255,255,0.08),0 0 30px rgba(255,255,255,0.04)",
+            lineHeight:1,
+            /* Crystal Steel — bright, precise edges, minimal bloom */
+            textShadow:`
+              0 1px 0 rgba(255,255,255,0.15),
+              0 -1px 0 rgba(255,255,255,0.08),
+              0 0 8px rgba(255,255,255,0.06),
+              0 2px 12px rgba(0,0,0,0.8)
+            `,
           }}>GLASSCORP</h1>
 
-          {/* ARENA — Bebas Neue, purple gradient, glow, bottom fade — exact spec */}
-          <div style={{position:"relative",lineHeight:0.95,marginTop:2}}>
-            {/* Extra glow layer BEHIND text — exact from spec */}
+          {/* ARENA — Arcane Energy Glass, spec exact */}
+          <div style={{position:"relative",lineHeight:1,marginTop:-4}}>
+            {/* Soft purple bloom BEHIND — ancient magical reactor, NOT neon */}
             <div style={{
               position:"absolute",
-              inset:0,
-              background:"rgba(123,47,255,0.55)",
-              filter:"blur(30px)",
-              opacity:0.55,
-              transform:"scale(1.2)",
+              top:"10%",left:"10%",right:"10%",bottom:"10%",
+              background:"rgba(123,47,255,0.4)",
+              filter:"blur(40px)",
+              opacity:0.6,
               pointerEvents:"none",
+              zIndex:0,
             }}/>
-            {/* ARENA text — gradient + glow + bottom fade mask */}
+            {/* ARENA — gradient #f2e9ff→#d6b7ff→#a56aff→#7b2fff→#5c1ec9 */}
             <h1 className="gc-arena-txt" style={{
               fontFamily:"'Bebas Neue',sans-serif",
-              fontSize:"clamp(50px,7.8vw,116px)",
-              fontWeight:900,
-              letterSpacing:"-0.02em",
+              fontSize:"clamp(46px,7.8vw,114px)",
+              fontWeight:400,
+              letterSpacing:"0.04em",
               textTransform:"uppercase",
               margin:0,
               position:"relative",
-              lineHeight:0.95,
-              /* exact gradient from spec */
+              lineHeight:1,
+              zIndex:1,
               background:"linear-gradient(180deg,#f2e9ff 0%,#d6b7ff 12%,#a56aff 35%,#7b2fff 65%,#5c1ec9 100%)",
               WebkitBackgroundClip:"text",
               WebkitTextFillColor:"transparent",
               backgroundClip:"text",
-              /* exact glow from spec */
-              filter:"drop-shadow(0 0 12px rgba(123,47,255,0.35)) drop-shadow(0 0 25px rgba(123,47,255,0.25)) drop-shadow(0 0 50px rgba(123,47,255,0.15))",
-              /* exact bottom fade mask from spec */
-              WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 76%,rgba(0,0,0,0) 100%)",
-              maskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 76%,rgba(0,0,0,0) 100%)",
+              /* soft glow — ancient, NOT neon */
+              filter:"drop-shadow(0 0 8px rgba(123,47,255,0.4)) drop-shadow(0 0 20px rgba(123,47,255,0.2)) drop-shadow(0 0 40px rgba(123,47,255,0.1))",
+              /* bottom dissolves into atmosphere */
+              WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 65%,rgba(0,0,0,0.3) 85%,rgba(0,0,0,0) 100%)",
+              maskImage:"linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 65%,rgba(0,0,0,0.3) 85%,rgba(0,0,0,0) 100%)",
             }}>ARENA</h1>
           </div>
         </div>
