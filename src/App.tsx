@@ -1550,49 +1550,259 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         backgroundImage:"linear-gradient(rgba(200,146,42,0.012) 1px,transparent 1px)",
         backgroundSize:"100% 44px",
         pointerEvents:"none",zIndex:0}}/>
-      {/* HERO */}
-      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"0 5vw 10vh",position:"relative",overflow:"hidden",backgroundColor:th.bgDeep}}>
-        {/* AZRON — cover + right anchored, works all screen sizes */}
+      {/* ── HERO — GLASSCORP HERO SYSTEM v2 ── */}
+      <style>{`
+        @keyframes marqueeAnim{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+        /* ARENA gradient text */
+        .gc-arena{
+          background:linear-gradient(180deg,#f2e9ff 0%,#d6b7ff 12%,#a56aff 35%,#7b2fff 65%,#5c1ec9 100%);
+          -webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;
+          background-clip:text;
+          text-shadow:none;
+          -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 70%,rgba(0,0,0,0) 100%);
+          mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 0%,rgba(0,0,0,1) 70%,rgba(0,0,0,0) 100%);
+        }
+
+        /* buttons */
+        .gc-btn-vault{
+          padding:14px 32px;
+          border:1px solid #00d4ff;
+          background:rgba(8,6,18,0.55);
+          color:#00d4ff;
+          cursor:pointer;
+          font-family:'Inter',sans-serif;
+          font-weight:700;
+          font-size:11px;
+          letter-spacing:3px;
+          text-transform:uppercase;
+          transition:transform 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;
+        }
+        .gc-btn-vault:hover{
+          transform:translateY(-2px);
+          box-shadow:0 0 20px rgba(0,212,255,0.22),0 0 40px rgba(0,212,255,0.1);
+          background:rgba(8,6,18,0.75);
+        }
+        .gc-btn-gmc{
+          padding:14px 32px;
+          border:1px solid #c8922a;
+          background:rgba(8,6,18,0.55);
+          color:#c8922a;
+          cursor:pointer;
+          font-family:'Inter',sans-serif;
+          font-weight:700;
+          font-size:11px;
+          letter-spacing:3px;
+          text-transform:uppercase;
+          transition:transform 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;
+        }
+        .gc-btn-gmc:hover{
+          transform:translateY(-2px);
+          box-shadow:0 0 20px rgba(200,146,42,0.22),0 0 40px rgba(200,146,42,0.1);
+          background:rgba(8,6,18,0.75);
+        }
+
+        /* responsive */
+        @media(max-width:1024px){
+          .gc-hero-ui{
+            align-items:center!important;
+            justify-content:flex-end!important;
+            padding-bottom:8vh!important;
+          }
+          .gc-hero-text{text-align:center!important;align-items:center!important;}
+          .gc-glasscorp{font-size:clamp(48px,10vw,88px)!important;}
+          .gc-arena-wrap{font-size:clamp(44px,9vw,80px)!important;}
+        }
+        @media(max-width:640px){
+          .gc-glasscorp{font-size:clamp(40px,13vw,72px)!important;}
+          .gc-arena-wrap{font-size:clamp(36px,12vw,64px)!important;}
+          .gc-hero-desc{display:none!important;}
+          .gc-corner-tr{display:none!important;}
+          .gc-corner-br{display:none!important;}
+          .gc-stats{gap:20px!important;}
+        }
+      `}</style>
+
+      <section style={{minHeight:"100vh",position:"relative",overflow:"hidden",background:"#080612"}}>
+
+        {/* LAYER 1 — AZRON centered background */}
         <div style={{position:"absolute",inset:0,
-          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
+          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg1.png)`,
           backgroundSize:"cover",
-          backgroundPosition:"right center",
+          backgroundPosition:"center center",
           backgroundRepeat:"no-repeat",
           pointerEvents:"none"}}/>
-        <Particles theme={th} count={60}/>
-        {/* dark overlay — same on ALL screens */}
+
+        {/* LAYER 2 — responsive UI gradient */}
         <div style={{position:"absolute",inset:0,
-          background:`linear-gradient(90deg,#080612ee 0%,#080612bb 30%,#08061266 50%,#08061222 65%,transparent 80%)`,
-          pointerEvents:"none",zIndex:0}}/>
-        {/* extra dark veil — same level desktop and mobile */}
-        <div style={{position:"absolute",inset:0,background:"rgba(8,6,18,0.35)",pointerEvents:"none",zIndex:0}}/>
-        <div style={{position:"absolute",top:"12vh",left:"5vw",zIndex:2}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:28,height:1,background:th.a1,boxShadow:`0 0 6px ${th.a1}`}}/>
-            <span style={{fontSize:9,letterSpacing:4,color:th.a1,textTransform:"uppercase",textShadow:`0 0 6px ${th.a1}`}}>Glasscorp · Member Collective · Est. 2024</span>
+          background:"linear-gradient(90deg,rgba(8,6,18,0.95) 0%,rgba(8,6,18,0.75) 30%,rgba(8,6,18,0.25) 60%,rgba(8,6,18,0) 100%)",
+          pointerEvents:"none"}}/>
+
+        {/* LAYER 3 — purple atmosphere center */}
+        <div style={{position:"absolute",inset:0,
+          background:"radial-gradient(circle at center,rgba(123,47,255,0.18) 0%,transparent 60%)",
+          pointerEvents:"none"}}/>
+
+        {/* LAYER 4 — vignette */}
+        <div style={{position:"absolute",inset:0,
+          background:"radial-gradient(circle,transparent 55%,rgba(0,0,0,0.45) 100%)",
+          pointerEvents:"none"}}/>
+
+        {/* LAYER 5 — subtle noise */}
+        <div style={{position:"absolute",inset:0,
+          backgroundImage:"url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")",
+          opacity:0.05,mixBlendMode:"overlay",pointerEvents:"none"}}/>
+
+        {/* ── CORNER DECORATIONS ── */}
+
+        {/* top left */}
+        <div style={{position:"absolute",top:24,left:28,zIndex:3,pointerEvents:"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:5,height:5,background:"#c8922a",opacity:0.8,transform:"rotate(45deg)"}}/>
+            <span style={{fontSize:9,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:500}}>
+              RARE BATCHES · REAL UPGRADES
+            </span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,marginLeft:13}}>
+            <div style={{width:5,height:5,background:"none",border:"1px solid rgba(200,146,42,0.5)",transform:"rotate(45deg)"}}/>
+            <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.4),transparent)"}}/>
           </div>
         </div>
-        <div style={{position:"relative",zIndex:2,maxWidth:900}}>
-          <div style={{fontSize:10,letterSpacing:5,color:th.a2,textTransform:"uppercase",marginBottom:18,textShadow:`0 0 10px ${th.a2}`}}>Rare batches. Real upgrades.</div>
-          <h1 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(52px,10vw,130px)",fontWeight:900,lineHeight:0.88,letterSpacing:"-0.03em",color:th.text,margin:"0 0 28px",textTransform:"uppercase"}}>
-            Glass<span style={{color:th.a1,textShadow:`0 0 30px ${th.a1},0 0 60px ${th.a1}40`}}>corp</span><br/>
-            <span style={{fontSize:"0.55em",color:th.a2,textShadow:`0 0 20px ${th.a2}`}}>Arena</span>
-          </h1>
-          <p style={{fontSize:15,color:th.dim,maxWidth:460,lineHeight:1.8,marginBottom:36}}>{t.heroDesc}</p>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-            <GBtn onClick={onShelf} color={th.a1}>{t.visitShelf}</GBtn>
-            <GBtn onClick={onRedeem} color={th.a2} outline>{t.redeemGMC}</GBtn>
+
+        {/* top right */}
+        <div className="gc-corner-tr" style={{position:"absolute",top:24,right:28,zIndex:3,pointerEvents:"none",textAlign:"right"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+            <span style={{fontSize:9,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:500}}>
+              MEMBER COLLECTIVE
+            </span>
+            <div style={{width:5,height:5,background:"#c8922a",opacity:0.8,transform:"rotate(45deg)"}}/>
           </div>
-          <div style={{display:"flex",gap:44,marginTop:52,paddingTop:28,borderTop:`1px solid ${th.border}`}}>
-            {[["80+","Batches Available"],["GMC","Exclusive Token"],["1-2hr","Portal Time"]].map(([n,l])=>(
-              <div key={l}>
-                <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(22px,4vw,38px)",fontWeight:900,color:th.a1,textShadow:`0 0 15px ${th.a1}`,lineHeight:1}}>{n}</div>
-                <div style={{fontSize:9,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginTop:4}}>{l}</div>
-              </div>
-            ))}
+          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,justifyContent:"flex-end"}}>
+            <div style={{flex:1,height:1,background:"linear-gradient(270deg,rgba(200,146,42,0.4),transparent)"}}/>
+            <div style={{width:5,height:5,background:"none",border:"1px solid rgba(200,146,42,0.5)",transform:"rotate(45deg)"}}/>
           </div>
         </div>
-        <style>{`@keyframes marqueeAnim{from{transform:translateX(0)}to{transform:translateX(-50%)}}`}</style>
+
+        {/* bottom left */}
+        <div style={{position:"absolute",bottom:24,left:28,zIndex:3,pointerEvents:"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+            <div style={{width:12,height:12,border:"1px solid rgba(200,146,42,0.4)",transform:"rotate(45deg)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{width:4,height:4,background:"rgba(200,146,42,0.5)"}}/>
+            </div>
+            <div style={{width:80,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.3),transparent)"}}/>
+          </div>
+          <span style={{fontSize:8,letterSpacing:"0.25em",color:"#bdb8c9",opacity:0.5,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",lineHeight:1.8,display:"block"}}>
+            THE EXCLUSIVE GUILD<br/>FOR THE DISCERNING COLLECTOR
+          </span>
+        </div>
+
+        {/* bottom right */}
+        <div className="gc-corner-br" style={{position:"absolute",bottom:24,right:28,zIndex:3,pointerEvents:"none",textAlign:"right"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,justifyContent:"flex-end"}}>
+            <div style={{width:80,height:1,background:"linear-gradient(270deg,rgba(200,146,42,0.3),transparent)"}}/>
+            <div style={{width:12,height:12,border:"1px solid rgba(200,146,42,0.4)",transform:"rotate(45deg)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{width:4,height:4,background:"rgba(200,146,42,0.5)"}}/>
+            </div>
+          </div>
+          <span style={{fontSize:9,letterSpacing:"0.25em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
+            EST. 2024
+          </span>
+        </div>
+
+        {/* ── MAIN UI LAYER ── */}
+        <div className="gc-hero-ui" style={{
+          position:"absolute",inset:0,
+          display:"flex",flexDirection:"column",
+          justifyContent:"center",
+          padding:"0 5vw",
+          zIndex:2,
+          maxWidth:580,
+        }}>
+          <div className="gc-hero-text" style={{display:"flex",flexDirection:"column",alignItems:"flex-start"}}>
+
+            {/* GLASSCORP */}
+            <h1 className="gc-glasscorp" style={{
+              fontFamily:"'Inter',sans-serif",
+              fontSize:"clamp(52px,7vw,108px)",
+              fontWeight:900,
+              letterSpacing:"-0.03em",
+              color:"#f2f2f2",
+              textTransform:"uppercase",
+              lineHeight:0.92,
+              margin:0,
+              textShadow:"0 0 10px rgba(255,255,255,0.08),0 0 30px rgba(255,255,255,0.04)",
+            }}>GLASSCORP</h1>
+
+            {/* ARENA — gradient + glow layer + bottom fade */}
+            <div className="gc-arena-wrap" style={{
+              position:"relative",
+              fontSize:"clamp(50px,6.8vw,104px)",
+              fontWeight:900,
+              letterSpacing:"-0.02em",
+              textTransform:"uppercase",
+              lineHeight:0.92,
+              marginBottom:24,
+            }}>
+              {/* glow layer behind text */}
+              <div style={{
+                position:"absolute",inset:0,
+                background:"rgba(123,47,255,0.55)",
+                filter:"blur(30px)",
+                opacity:0.55,
+                transform:"scale(1.2)",
+                pointerEvents:"none",
+              }}/>
+              <span className="gc-arena" style={{
+                fontFamily:"'Inter',sans-serif",
+                fontWeight:900,
+                letterSpacing:"-0.02em",
+                textTransform:"uppercase",
+                position:"relative",
+              }}>ARENA</span>
+            </div>
+
+            {/* description */}
+            <p className="gc-hero-desc" style={{
+              fontSize:13,
+              color:"#bdb8c9",
+              maxWidth:400,
+              lineHeight:1.9,
+              marginBottom:32,
+              fontFamily:"'Inter',sans-serif",
+              opacity:0.9,
+            }}>{t.heroDesc}</p>
+
+            {/* buttons */}
+            <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:44}}>
+              <button className="gc-btn-vault" onClick={onShelf}>{t.visitShelf}</button>
+              <button className="gc-btn-gmc" onClick={onRedeem}>{t.redeemGMC}</button>
+            </div>
+
+            {/* stats */}
+            <div className="gc-stats" style={{
+              display:"flex",gap:32,
+              paddingTop:20,
+              borderTop:"1px solid rgba(200,146,42,0.15)",
+            }}>
+              {[["80+","Batches"],["GMC","Token"],["1-2hr","Portal"]].map(([n,l])=>(
+                <div key={l}>
+                  <div style={{
+                    fontFamily:"'Inter',sans-serif",
+                    fontSize:"clamp(18px,2.5vw,28px)",
+                    fontWeight:900,
+                    color:"#00d4ff",
+                    lineHeight:1,
+                    textShadow:"0 0 12px rgba(0,212,255,0.5)",
+                  }}>{n}</div>
+                  <div style={{fontSize:8,letterSpacing:"0.2em",color:"#7a7090",textTransform:"uppercase",marginTop:3,fontFamily:"'Inter',sans-serif"}}>{l}</div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+
       </section>
 
       {/* MARQUEE — AZRON's proclamation */}
