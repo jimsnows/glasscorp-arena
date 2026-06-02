@@ -1,210 +1,11 @@
 // @ts-nocheck
-import React, { useState, useEffect, useRef } from "react";
-
-// ── SUPABASE CLIENT ──
-const SUPA_URL = "https://febslpxjssjijooiukot.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlYnNscHhqc3NqaWpvb2l1a290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDg4MzgsImV4cCI6MjA5NTM4NDgzOH0.7dT4kRulXXmkoUkOHls0P7Eq4jna8hZlkEayW-O7PUY";
-const SUPA_HEADERS = { "Content-Type":"application/json", "apikey":SUPA_KEY, "Authorization":"Bearer "+SUPA_KEY };
-
-// ── CHARACTER URLS ──
-const CHARS = {
-  AZRON: "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/AZRON.png",
-  ARES:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/ARES.png",
-  SPARK: "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/SPARK.png",
-  DEEP:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/DEEP.png",
-  FLUX:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/FLUX.png",
-  FEATURED_BG:      "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/featured-bg.png",
-  VAULT_BG:         "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/vault-bg.png",
-  CRYSTAL_EXOTIC:   "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/crystal-exotic.png",
-  CRYSTAL_PREMIUM:  "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/crystal-premium.png",
-  CRYSTAL_TOP:      "https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/crystal-top.png",
-};
-
-async function sbGet(table, query=""){
-  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${query}`, { headers:SUPA_HEADERS });
-  if(!res.ok) return [];
-  return res.json();
-}
-async function sbInsert(table, data){
-  const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
-    method:"POST", headers:{...SUPA_HEADERS, "Prefer":"return=representation"},
-    body:JSON.stringify(data)
-  });
-  if(!res.ok){ console.error("sbInsert error", await res.text()); return null; }
-  const rows = await res.json();
-  return Array.isArray(rows) ? rows[0] : rows;
-}
-async function sbUpdate(table, match, data){
-  const params = Object.entries(match).map(([k,v])=>`${k}=eq.${v}`).join("&");
-  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
-    method:"PATCH", headers:{...SUPA_HEADERS, "Prefer":"return=representation"},
-    body:JSON.stringify(data)
-  });
-  if(!res.ok){ console.error("sbUpdate error", await res.text()); return null; }
-  return res.json();
-}
-async function sbDelete(table, match){
-  const params = Object.entries(match).map(([k,v])=>`${k}=eq.${v}`).join("&");
-  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
-    method:"DELETE", headers:SUPA_HEADERS
-  });
-  return res.ok;
-}
-async function sbUploadImage(file, bucket="strain-media"){
-  const ext = file.name.split(".").pop() || "jpg";
-  const filename = `strain_${Date.now()}.${ext}`;
-  const res = await fetch(`${SUPA_URL}/storage/v1/object/${bucket}/${filename}`, {
-    method:"POST",
-    headers:{ "apikey":SUPA_KEY, "Authorization":"Bearer "+SUPA_KEY, "Content-Type":file.type, "x-upsert":"true" },
-    body: file
-  });
-  if(!res.ok){ console.error("Upload error", await res.text()); return null; }
-  return `${SUPA_URL}/storage/v1/object/public/${bucket}/${filename}`;
-}
-
-// ── SUPABASE AUTH FUNCTIONS ──
-async function sbSignUp(email, password){
-  const res = await fetch(`${SUPA_URL}/auth/v1/signup`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
-    body:JSON.stringify({email,password})
-  });
-  const data = await res.json();
-  if(!res.ok) return {error:data.error_description||data.msg||"Signup failed"};
-  return {data};
-}
-async function sbSignIn(email, password){
-  const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
-    body:JSON.stringify({email,password})
-  });
-  const data = await res.json();
-  if(!res.ok) return {error:data.error_description||data.msg||"Login failed"};
-  return {data};
-}
-async function sbSignOut(token){
-  await fetch(`${SUPA_URL}/auth/v1/logout`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json","apikey":SUPA_KEY,"Authorization":"Bearer "+token}
-  });
-}
-async function sbForgotPassword(email){
-  const res = await fetch(`${SUPA_URL}/auth/v1/recover`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json","apikey":SUPA_KEY},
-    body:JSON.stringify({email})
-  });
-  return res.ok;
-}
-async function sbGetSession(){
-  const token = localStorage.getItem("glasscorp_session");
-  if(!token) return null;
-  const res = await fetch(`${SUPA_URL}/auth/v1/user`, {
-    headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+token}
-  });
-  if(!res.ok){ localStorage.removeItem("glasscorp_session"); return null; }
-  const data = await res.json();
-  return {user:data, token};
-}
-async function sbGetMemberByAuthId(authId){
-  const rows = await sbGet("members", `auth_id=eq.${authId}`);
-  return rows&&rows.length>0 ? dbToMember(rows[0]) : null;
-}
-async function sbCheckPersonameUnique(personame){
-  const rows = await sbGet("members", `personame=eq.${encodeURIComponent(personame)}&select=id`);
-  return !rows||rows.length===0;
-}
-async function sbCreateMember(authId, email, personame, avatarUrl=""){
-  const id = Date.now();
-  const row = {
-    id, auth_id:authId, email, personame,
-    name:personame, avatar_url:avatarUrl||"",
-    phone:"", line_id:"",
-    gmc_balance:0, total_spent:0,
-    claim_history:JSON.stringify([]),
-    auth_provider: email&&!email.endsWith("@glasscorp.gg")?"email":"personame",
-    joined_at:new Date().toISOString()
-  };
-  return sbInsert("members", row);
-}
-function sbSignInWithGoogle(){
-  const redirectTo = encodeURIComponent(window.location.origin);
-  window.location.href = `${SUPA_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
-}
-function sbGetTokenFromUrl(){
-  const hash = window.location.hash;
-  if(!hash) return null;
-  const params = new URLSearchParams(hash.replace("#",""));
-  const token = params.get("access_token");
-  if(token){
-    localStorage.setItem("glasscorp_session", token);
-    localStorage.setItem("glasscorp_age_ok","1"); // auto-pass age gate for Google users
-    window.history.replaceState(null,"",window.location.pathname);
-  }
-  return token;
-}
-
-function dbToStrain(row){
-  return {
-    id: row.id,
-    name: row.name||"",
-    type: row.type||"Hybrid",
-    sativaRatio: row.sativa_ratio||50,
-    thc: row.thc||0,
-    cbd: row.cbd||0,
-    effects: row.effects||[],
-    desc: row.description||"",
-    gmcCost: row.gmc_cost||0,
-    stock: row.stock||0,
-    tier: row.tier||"TOP",
-    tag: row.tag||"",
-    media: row.image_url||"",
-    media2: row.image_url2||"",
-    media3: row.image_url3||"",
-    promo: row.promo||{active:false,label:"",discount:0},
-    active: row.active!==false,
-  };
-}
-function strainToDb(s){
-  return {
-    name: s.name,
-    type: s.type,
-    sativa_ratio: s.sativaRatio,
-    thc: s.thc,
-    cbd: s.cbd,
-    effects: s.effects,
-    description: s.desc,
-    gmc_cost: s.gmcCost,
-    stock: s.stock,
-    tier: s.tier,
-    tag: s.tag||"",
-    image_url: s.media||"",
-    active: true,
-  };
-}
-function dbToMember(row){
-  return {
-    id: row.id,
-    name: row.name||"",
-    phone: row.phone||"",
-    lineId: row.line_id||"",
-    gmcBalance: row.gmc_balance||0,
-    totalSpent: row.total_spent||0,
-    claimHistory: row.claim_history||[],
-    deliveryAddress: row.delivery_address||"",
-    mapsLink: row.maps_link||"",
-    riderPhone: row.rider_phone||"",
-    countryCode: row.country_code||"+66",
-    joinedAt: row.joined_at||new Date().toISOString(),
-  };
-}
+import { useState, useEffect, useRef } from "react";
 
 // ── THEMES — dramatically different ──
 const T = {
   base: {
     bg:"#0d0a1a", bgCard:"#13102a", bgDeep:"#080612",
-    a1:"#00d4ff", a2:"#7b2fff", amber:"#c8922a",
+    a1:"#00d4ff", a2:"#7b2fff", amber:"#e8a020",
     text:"#e8e0f0", dim:"#7a7090", border:"rgba(123,47,255,0.3)",
     glow1:"#00d4ff", glow2:"#7b2fff", name:"base"
   },
@@ -224,7 +25,7 @@ const T = {
   },
   hybrid: {
     bg:"#0a0010", bgCard:"#160015", bgDeep:"#060008",
-    a1:"#ff1493", a2:"#cc0022", amber:"#c8922a",
+    a1:"#ff1493", a2:"#cc0022", amber:"#e8a020",
     text:"#fff0f8", dim:"#997080", border:"rgba(200,0,100,0.4)",
     glow1:"#ff1493", glow2:"#cc0022", name:"hybrid",
     particle:"both"
@@ -260,15 +61,9 @@ function getLabel(r){
 function GlobalParticles(){
   const ref=useRef(null);
   const anim=useRef(null);
-  const lastFrame=useRef(0);
   useEffect(()=>{
     const c=ref.current; if(!c) return;
     const ctx=c.getContext("2d");
-    const isMobile=window.innerWidth<=768;
-    // Mobile: 12 particles, no shadowBlur, slower. Desktop: 30 particles, light glow.
-    const COUNT=isMobile?12:30;
-    const FPS=isMobile?20:30; // throttle frame rate
-    const INTERVAL=1000/FPS;
     let W,H;
     function resize(){
       W=c.width=window.innerWidth;
@@ -276,43 +71,45 @@ function GlobalParticles(){
     }
     resize();
     window.addEventListener("resize",resize);
+
+    // 45 mixed particles — base arcane theme
+    const COUNT=45;
     const COLS=["#00d4ff","#7b2fff","#00d4ff88","#7b2fff88","#e8a02060"];
     const ps=Array.from({length:COUNT},(_,i)=>({
       x:Math.random()*window.innerWidth,
       y:Math.random()*window.innerHeight,
-      vx:(Math.random()-0.5)*0.3,
-      vy:-Math.random()*0.25-0.04,
-      r:Math.random()*2+0.5,
+      vx:(Math.random()-0.5)*0.4,
+      vy:-Math.random()*0.35-0.05,
+      r:Math.random()*2.5+0.5,
       op:Math.random(),
       opDir:Math.random()>0.5?1:-1,
       col:COLS[i%COLS.length],
+      life:Math.random()*200,
     }));
-    function draw(ts){
-      anim.current=requestAnimationFrame(draw);
-      if(ts-lastFrame.current<INTERVAL) return; // throttle
-      lastFrame.current=ts;
+
+    function draw(){
       ctx.clearRect(0,0,W,H);
       ps.forEach(p=>{
         p.x+=p.vx; p.y+=p.vy;
-        p.op+=p.opDir*0.008;
+        p.op+=p.opDir*0.006;
         if(p.op>=1||p.op<=0) p.opDir*=-1;
         if(p.x<0)p.x=W; if(p.x>W)p.x=0;
-        if(p.y<0)p.y=H; if(p.y>H){p.y=H;p.vy=-Math.abs(p.vy);}
+        if(p.y<0)p.y=H; if(p.y>H){ p.y=H; p.vy=-Math.abs(p.vy); }
+        p.life++;
         ctx.save();
-        ctx.globalAlpha=Math.max(0,Math.min(1,p.op))*0.6;
-        if(!isMobile){ctx.shadowBlur=6;ctx.shadowColor=p.col;} // skip shadowBlur on mobile
+        ctx.globalAlpha=Math.max(0,Math.min(1,p.op))*0.65;
+        ctx.shadowBlur=10;
+        ctx.shadowColor=p.col;
         ctx.fillStyle=p.col;
         ctx.beginPath();
         ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
         ctx.fill();
         ctx.restore();
       });
+      anim.current=requestAnimationFrame(draw);
     }
-    anim.current=requestAnimationFrame(draw);
-    // Pause when tab not visible — saves CPU and battery ✅
-    function onVisibility(){ if(document.hidden){ cancelAnimationFrame(anim.current); } else { anim.current=requestAnimationFrame(draw); } }
-    document.addEventListener("visibilitychange",onVisibility);
-    return()=>{ cancelAnimationFrame(anim.current); window.removeEventListener("resize",resize); document.removeEventListener("visibilitychange",onVisibility); };
+    draw();
+    return()=>{ cancelAnimationFrame(anim.current); window.removeEventListener("resize",resize); };
   },[]);
   return <canvas ref={ref} style={{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0}}/>;
 }
@@ -320,23 +117,15 @@ function GlobalParticles(){
 function Particles(){return null;}
 
 // ── GLITCH TEXT (Sativa only) ──
-// Spark (Sativa) — cyan glitch flicker, only runs when visible
 function GlitchText({text,active}){
   const [g,setG]=useState(false);
-  const ref=useRef(null);
-  const visible=useRef(false);
   useEffect(()=>{
     if(!active) return;
-    const obs=new IntersectionObserver(([e])=>{ visible.current=e.isIntersecting; },{threshold:0});
-    if(ref.current) obs.observe(ref.current);
-    const iv=setInterval(()=>{
-      if(!visible.current) return;
-      setG(true); setTimeout(()=>setG(false),120);
-    },2500+Math.random()*2000);
-    return()=>{ clearInterval(iv); obs.disconnect(); };
+    const iv=setInterval(()=>{ setG(true); setTimeout(()=>setG(false),120); },2500+Math.random()*2000);
+    return()=>clearInterval(iv);
   },[active]);
   return(
-    <span ref={ref} style={{position:"relative",display:"inline-block"}}>
+    <span style={{position:"relative",display:"inline-block"}}>
       {text}
       {g&&<>
         <span style={{position:"absolute",top:0,left:3,color:"#00aaff",opacity:0.9,clipPath:"polygon(0 15%,100% 15%,100% 35%,0 35%)"}}>{text}</span>
@@ -346,89 +135,16 @@ function GlitchText({text,active}){
   );
 }
 
-// Deep (Indica) — slow crimson pulse, only runs when visible
-function PulseText({text,active}){
-  const [p,setP]=useState(false);
-  const ref=useRef(null);
-  const visible=useRef(false);
-  useEffect(()=>{
-    if(!active) return;
-    const obs=new IntersectionObserver(([e])=>{ visible.current=e.isIntersecting; },{threshold:0});
-    if(ref.current) obs.observe(ref.current);
-    const iv=setInterval(()=>{
-      if(!visible.current) return;
-      setP(true); setTimeout(()=>setP(false),400);
-    },3000+Math.random()*2000);
-    return()=>{ clearInterval(iv); obs.disconnect(); };
-  },[active]);
-  return(
-    <span ref={ref} style={{position:"relative",display:"inline-block",
-      textShadow:p?"0 0 20px #cc0022, 0 0 40px #cc002280, 0 0 2px #ff4444":"0 0 8px #cc002240",
-      transition:"text-shadow 0.3s ease",color:p?"#ff4444":undefined}}>
-      {text}
-      {p&&<>
-        <span style={{position:"absolute",top:0,left:2,color:"#cc0022",opacity:0.6,clipPath:"polygon(0 20%,100% 20%,100% 45%,0 45%)",filter:"blur(1px)"}}>{text}</span>
-        <span style={{position:"absolute",top:0,left:-2,color:"#5500aa",opacity:0.5,clipPath:"polygon(0 60%,100% 60%,100% 80%,0 80%)",filter:"blur(0.5px)"}}>{text}</span>
-      </>}
-    </span>
-  );
-}
-
-// Flux (Hybrid) — unstable color shift, only runs when visible
-function FluxText({text,active}){
-  const [f,setF]=useState(0);
-  const ref=useRef(null);
-  const visible=useRef(false);
-  useEffect(()=>{
-    if(!active) return;
-    const obs=new IntersectionObserver(([e])=>{ visible.current=e.isIntersecting; },{threshold:0});
-    if(ref.current) obs.observe(ref.current);
-    const iv=setInterval(()=>{
-      if(!visible.current) return;
-      const r=Math.random();
-      if(r<0.4){ setF(1); setTimeout(()=>setF(0),100); }
-      else if(r<0.7){ setF(2); setTimeout(()=>setF(0),150); }
-      else { setF(1); setTimeout(()=>{ setF(2); setTimeout(()=>setF(0),100); },90); }
-    },1800+Math.random()*1500);
-    return()=>{ clearInterval(iv); obs.disconnect(); };
-  },[active]);
-  return(
-    <span ref={ref} style={{position:"relative",display:"inline-block"}}>
-      {text}
-      {f===1&&<>
-        <span style={{position:"absolute",top:0,left:3,color:"#00aaff",opacity:0.8,clipPath:"polygon(0 10%,100% 10%,100% 40%,0 40%)"}}>{text}</span>
-        <span style={{position:"absolute",top:0,left:-2,color:"#ff1493",opacity:0.6,clipPath:"polygon(0 60%,100% 60%,100% 85%,0 85%)"}}>{text}</span>
-      </>}
-      {f===2&&<>
-        <span style={{position:"absolute",top:0,left:-3,color:"#cc0022",opacity:0.8,clipPath:"polygon(0 15%,100% 15%,100% 45%,0 45%)"}}>{text}</span>
-        <span style={{position:"absolute",top:0,left:2,color:"#00ddff",opacity:0.6,clipPath:"polygon(0 55%,100% 55%,100% 80%,0 80%)"}}>{text}</span>
-      </>}
-    </span>
-  );
-}
-
 // ── GMC COIN ──
 function GMCCoin({size=24,theme}){
-  // Pure CSS animation — zero JS, zero React re-renders, 100% GPU ✅
-  const uid=useRef("coin"+Math.random().toString(36).slice(2,6)).current;
-  // Inline the keyframe as a data URI approach won't work — inject into document head once
-  if(typeof document!=="undefined"){
-    const styleId="gc-coin-style";
-    if(!document.getElementById(styleId)){
-      const s=document.createElement("style");
-      s.id=styleId;
-      s.textContent=`@keyframes gc-coin-spin{0%{transform:scaleX(1)}25%{transform:scaleX(0.3)}50%{transform:scaleX(1)}75%{transform:scaleX(0.3)}100%{transform:scaleX(1)}}`;
-      document.head.appendChild(s);
-    }
-  }
+  const [rot,setRot]=useState(0);
+  useEffect(()=>{
+    const iv=setInterval(()=>setRot(r=>(r+2)%360),30);
+    return()=>clearInterval(iv);
+  },[]);
+  const squish=Math.abs(Math.cos(rot*Math.PI/180));
   return(
-    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
-      width:size,height:size,borderRadius:"50%",
-      background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,
-      boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,
-      fontSize:size*0.45,flexShrink:0,fontWeight:900,color:"rgba(0,0,0,0.7)",
-      animation:"gc-coin-spin 2.8s ease-in-out infinite",
-      willChange:"transform"}}>
+    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:size,height:size,borderRadius:"50%",background:`radial-gradient(circle at 35% 35%, ${theme.amber}ff, ${theme.amber}88)`,boxShadow:`0 0 ${size/2}px ${theme.amber}80, inset 0 1px 2px rgba(255,255,255,0.4)`,transform:`scaleX(${0.3+squish*0.7})`,fontSize:size*0.45,flexShrink:0,transition:"none",fontWeight:900,color:"rgba(0,0,0,0.7)"}}>
       G
     </span>
   );
@@ -457,8 +173,8 @@ const STRAINS=[
   {id:8,name:"Wedding Cake",type:"Hybrid",sativaRatio:60,thc:24,cbd:0.1,effects:["Relaxed","Happy","Euphoric"],desc:"Rich tangy flavors. Relaxing and euphoric effects that calm the body.",gmcCost:500,stock:7,tier:"PREMIUM",tag:""},
 ];
 const TIERS=["EXOTIC","PREMIUM","TOP"];
-const TIER_S={"EXOTIC":{color:"#c8922a",glow:"rgba(232,160,32,0.3)",icon:"💎"},"PREMIUM":{color:"#7b2fff",glow:"rgba(123,47,255,0.3)",icon:"🔮"},"TOP":{color:"#00d4ff",glow:"rgba(0,212,255,0.3)",icon:"⚡"}};
-const RANKS=[{name:"Seed",min:0,color:"#7a7090",icon:"🌱"},{name:"Sprout",min:500,color:"#00d4ff",icon:"🌿"},{name:"Grower",min:2000,color:"#7b2fff",icon:"🌳"},{name:"Cultivator",min:5000,color:"#c8922a",icon:"⚗️"},{name:"Master",min:10000,color:"#ff1493",icon:"👑"}];
+const TIER_S={"EXOTIC":{color:"#e8a020",glow:"rgba(232,160,32,0.3)",icon:"💎"},"PREMIUM":{color:"#7b2fff",glow:"rgba(123,47,255,0.3)",icon:"🔮"},"TOP":{color:"#00d4ff",glow:"rgba(0,212,255,0.3)",icon:"⚡"}};
+const RANKS=[{name:"Seed",min:0,color:"#7a7090",icon:"🌱"},{name:"Sprout",min:500,color:"#00d4ff",icon:"🌿"},{name:"Grower",min:2000,color:"#7b2fff",icon:"🌳"},{name:"Cultivator",min:5000,color:"#e8a020",icon:"⚗️"},{name:"Master",min:10000,color:"#ff1493",icon:"👑"}];
 function getRank(s){return[...RANKS].reverse().find(r=>s>=r.min)||RANKS[0];}
 const COUNTRY_CODES=[
   {code:"+66",flag:"🇹🇭",name:"Thailand"},
@@ -491,7 +207,7 @@ const L={
     enterGuild:"Enter The Guild →",skipForNow:"Browse as Guest",
     claimRequest:"Claim Approved",claimDesc:"We will contact you to confirm your batch.",
     backToShelf:"Back to The Vault",claimedItems:"Claimed Batches",
-    noHistory:"No batches claimed yet. Enter The Vault.",logout:"Leave Arena",
+    noHistory:"No batches claimed yet. Enter The Vault.",logout:"Leave Guild",
     adminAccess:"Control Room",enterPin:"Enter Access Code",wrongPin:"Wrong code. Try again.",
     total:"Total GMC",stock:"In Vault",remaining:"bits left",
     filterAll:"All Batches",
@@ -623,106 +339,71 @@ function BudPlaceholder({color1,color2,size=220}){
   );
 }
 
-// ── KI ENERGY ANIMATION — GPU only: transform + opacity, no box-shadow animations ──
+// ── KI ENERGY ANIMATION — replaces CBD + GMC/bit row on cards ──
 function KiEnergy({type,size=60}){
   const isSpark=type==="Sativa"||type==="Sativa Hybrid";
   const isDeep=type==="Indica"||type==="Indica Hybrid";
-  const uid=useRef("ki"+Math.random().toString(36).slice(2,8)).current;
-
+  // Spark=electric yellow/blue, Deep=dark red/purple, Flux=pink/mixed
+  const uid="ki"+Math.random().toString(36).slice(2,8);
   if(isSpark) return(
     <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
         @keyframes spark-ring-${uid}{0%{transform:scale(0.5);opacity:0.9}100%{transform:scale(1.8);opacity:0}}
+        @keyframes spark-core-${uid}{0%,100%{box-shadow:0 0 8px 3px #FFD700,0 0 16px 6px #00AAFF40}50%{box-shadow:0 0 14px 5px #FFD700,0 0 28px 10px #00AAFF60}}
         @keyframes spark-bolt-${uid}{0%,100%{opacity:0.3;transform:scale(0.8) rotate(0deg)}50%{opacity:1;transform:scale(1.1) rotate(20deg)}}
-        @keyframes spark-glow-${uid}{0%,100%{opacity:0.5;transform:scale(0.95)}50%{opacity:1;transform:scale(1.05)}}
       `}</style>
-      {/* Expanding rings — transform+opacity only ✅ */}
+      {/* Expanding rings */}
       {[0,0.4,0.8].map((delay,i)=>(
         <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",border:"1px solid #FFD700",animation:`spark-ring-${uid} 1.2s ease-out ${delay}s infinite`,opacity:0}}/>
       ))}
-      {/* Glow layer behind core — static, no animation on box-shadow ✅ */}
-      <div style={{position:"absolute",width:size*0.55,height:size*0.55,borderRadius:"50%",
-        background:"radial-gradient(circle,#FFD70060 0%,#00AAFF30 50%,transparent 80%)",
-        animation:`spark-glow-${uid} 0.9s ease-in-out infinite`}}/>
-      {/* Core — static background, only scale animates ✅ */}
-      <div style={{width:size*0.42,height:size*0.42,borderRadius:"50%",
-        background:"radial-gradient(circle,#FFD700 0%,#00AAFF 60%,transparent 100%)",
-        position:"relative",zIndex:1}}/>
-      {/* Lightning bolts — transform+opacity only ✅ */}
+      {/* Core */}
+      <div style={{width:size*0.42,height:size*0.42,borderRadius:"50%",background:"radial-gradient(circle,#FFD700 0%,#00AAFF 60%,transparent 100%)",animation:`spark-core-${uid} 0.8s ease-in-out infinite`,position:"relative",zIndex:1}}/>
+      {/* Lightning bolts */}
       {[0,60,120,180,240,300].map((deg,i)=>(
-        <div key={i} style={{position:"absolute",width:2,height:size*0.3,
-          background:`linear-gradient(${deg>180?"to top":"to bottom"},#FFD700,transparent)`,
-          transform:`rotate(${deg}deg) translateY(-${size*0.18}px)`,
-          transformOrigin:"bottom center",
-          animation:`spark-bolt-${uid} ${0.6+i*0.1}s ease-in-out ${i*0.1}s infinite`,opacity:0.7}}/>
+        <div key={i} style={{position:"absolute",width:2,height:size*0.3,background:`linear-gradient(${deg>180?"to top":"to bottom"},#FFD700,transparent)`,transform:`rotate(${deg}deg) translateY(-${size*0.18}px)`,transformOrigin:"bottom center",animation:`spark-bolt-${uid} ${0.6+i*0.1}s ease-in-out ${i*0.1}s infinite`,opacity:0.7}}/>
       ))}
     </div>
   );
-
   if(isDeep) return(
     <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
         @keyframes deep-breathe-${uid}{0%{transform:scale(0.5);opacity:0.8}100%{transform:scale(1.8);opacity:0}}
+        @keyframes deep-core-${uid}{0%,100%{box-shadow:0 0 10px 4px #CC0022,0 0 20px 8px #5500AA40}50%{box-shadow:0 0 18px 7px #CC0022,0 0 36px 14px #5500AA70}}
         @keyframes deep-orb-${uid}{0%{transform:rotate(0deg) translateX(${size*0.28}px)}100%{transform:rotate(360deg) translateX(${size*0.28}px)}}
         @keyframes deep-orb2-${uid}{0%{transform:rotate(180deg) translateX(${size*0.28}px)}100%{transform:rotate(540deg) translateX(${size*0.28}px)}}
-        @keyframes deep-glow-${uid}{0%,100%{opacity:0.4;transform:scale(0.9)}50%{opacity:0.8;transform:scale(1.1)}}
       `}</style>
-      {/* Expanding rings — transform+opacity only ✅ */}
+      {/* Expanding rings — same reach as Spark */}
       {[0,0.5,1.0].map((delay,i)=>(
-        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",
-          border:"1px solid #CC002270",
-          animation:`deep-breathe-${uid} 2.2s ease-out ${delay}s infinite`,opacity:0}}/>
+        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",border:"1px solid #CC002270",animation:`deep-breathe-${uid} 2.2s ease-out ${delay}s infinite`,opacity:0}}/>
       ))}
-      {/* Glow layer — opacity+scale only ✅ */}
-      <div style={{position:"absolute",width:size*0.6,height:size*0.6,borderRadius:"50%",
-        background:"radial-gradient(circle,#CC002250 0%,#5500AA30 55%,transparent 80%)",
-        animation:`deep-glow-${uid} 1.8s ease-in-out infinite`}}/>
-      {/* Core — static, no box-shadow animation ✅ */}
-      <div style={{width:size*0.4,height:size*0.4,borderRadius:"50%",
-        background:"radial-gradient(circle,#CC0022 0%,#5500AA 55%,transparent 100%)",
-        position:"relative",zIndex:1}}/>
-      {/* Orbiting orbs — transform only ✅ (static box-shadow, not animated) */}
-      <div style={{position:"absolute",width:6,height:6,borderRadius:"50%",
-        background:"#CC0022",boxShadow:"0 0 6px #CC0022",
-        animation:`deep-orb-${uid} 2s linear infinite`}}/>
-      <div style={{position:"absolute",width:4,height:4,borderRadius:"50%",
-        background:"#5500AA",boxShadow:"0 0 4px #5500AA",
-        animation:`deep-orb2-${uid} 2s linear infinite`}}/>
+      {/* Static inner rings */}
+      {[0,0.6].map((delay,i)=>(
+        <div key={i} style={{position:"absolute",width:`${75+i*15}%`,height:`${75+i*15}%`,borderRadius:"50%",border:`1px solid #5500AA40`,animation:`deep-breathe-${uid} ${2+i*0.5}s ease-in-out ${delay}s infinite`}}/>
+      ))}
+      {/* Dark core */}
+      <div style={{width:size*0.4,height:size*0.4,borderRadius:"50%",background:"radial-gradient(circle,#CC0022 0%,#5500AA 55%,transparent 100%)",animation:`deep-core-${uid} 1.8s ease-in-out infinite`,position:"relative",zIndex:1}}/>
+      {/* Orbiting dark orbs */}
+      <div style={{position:"absolute",width:6,height:6,borderRadius:"50%",background:"#CC0022",boxShadow:"0 0 6px #CC0022",animation:`deep-orb-${uid} 2s linear infinite`}}/>
+      <div style={{position:"absolute",width:4,height:4,borderRadius:"50%",background:"#5500AA",boxShadow:"0 0 4px #5500AA",animation:`deep-orb2-${uid} 2s linear infinite`}}/>
     </div>
   );
-
   // Flux
   return(
     <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
       <style>{`
-        @keyframes flux-ring-${uid}{0%{transform:scale(0.5) rotate(0deg);opacity:0.8}100%{transform:scale(1.8) rotate(360deg);opacity:0}}
+        @keyframes flux-spin-${uid}{0%{transform:scale(0.5) rotate(0deg);opacity:0.8}100%{transform:scale(1.8) rotate(360deg);opacity:0}}
         @keyframes flux-spin-r-${uid}{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
-        @keyframes flux-spin-f-${uid}{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-        @keyframes flux-glow-${uid}{0%,100%{opacity:0.5;transform:scale(0.95)}50%{opacity:1;transform:scale(1.05)}}
+        @keyframes flux-core-${uid}{0%,100%{box-shadow:0 0 10px 4px #FF1493,0 0 20px 8px #00AAFF40}50%{box-shadow:0 0 10px 4px #00AAFF,0 0 20px 8px #FF149340}}
       `}</style>
-      {/* Expanding rings — transform+opacity ✅ */}
+      {/* Expanding rings same as Spark */}
       {[0,0.45,0.9].map((delay,i)=>(
-        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",
-          border:"1px solid #FF149360",
-          animation:`flux-ring-${uid} 1.2s ease-out ${delay}s infinite`,opacity:0}}/>
+        <div key={i} style={{position:"absolute",width:"100%",height:"100%",borderRadius:"50%",border:"1px solid #FF149360",animation:`flux-spin-${uid} 1.2s ease-out ${delay}s infinite`,opacity:0}}/>
       ))}
-      {/* Rotating arcs — transform only ✅ */}
-      <div style={{position:"absolute",width:"95%",height:"95%",borderRadius:"50%",
-        borderTop:"2px solid #FF149380",borderBottom:"2px solid transparent",
-        borderLeft:"2px solid transparent",borderRight:"2px solid #00AAFF80",
-        animation:`flux-spin-f-${uid} 2s linear infinite`}}/>
-      <div style={{position:"absolute",width:"75%",height:"75%",borderRadius:"50%",
-        borderTop:"2px solid #00AAFF60",borderBottom:"2px solid transparent",
-        borderLeft:"2px solid transparent",borderRight:"2px solid #FF149360",
-        animation:`flux-spin-r-${uid} 1.5s linear infinite`}}/>
-      {/* Glow layer — opacity+scale only ✅ */}
-      <div style={{position:"absolute",width:size*0.55,height:size*0.55,borderRadius:"50%",
-        background:"radial-gradient(circle,#FF149340 0%,#00AAFF30 55%,transparent 80%)",
-        animation:`flux-glow-${uid} 1.5s ease-in-out infinite`}}/>
-      {/* Core — static, no box-shadow animation ✅ */}
-      <div style={{width:size*0.38,height:size*0.38,borderRadius:"50%",
-        background:"radial-gradient(circle,#FF1493 0%,#00AAFF 55%,transparent 100%)",
-        position:"relative",zIndex:1}}/>
+      {/* Dual rotating arcs — full size */}
+      <div style={{position:"absolute",width:"95%",height:"95%",borderRadius:"50%",borderTop:"2px solid #FF149380",borderBottom:"2px solid transparent",borderLeft:"2px solid transparent",borderRight:"2px solid #00AAFF80",animation:`flux-spin-${uid} 1.2s linear infinite`}}/>
+      <div style={{position:"absolute",width:"75%",height:"75%",borderRadius:"50%",borderTop:"2px solid #00AAFF60",borderBottom:"2px solid transparent",borderLeft:"2px solid transparent",borderRight:"2px solid #FF149360",animation:`flux-spin-r-${uid} 0.9s linear infinite`}}/>
+      {/* Core shifts color */}
+      <div style={{width:size*0.38,height:size*0.38,borderRadius:"50%",background:"radial-gradient(circle,#FF1493 0%,#00AAFF 55%,transparent 100%)",animation:`flux-core-${uid} 1.5s ease-in-out infinite`,position:"relative",zIndex:1}}/>
     </div>
   );
 }
@@ -735,7 +416,7 @@ function SpinningBud({strain,size=200}){
   const isInd=strain.type==="Indica"||strain.type==="Indica Hybrid";
   const glowColor=isSat?"#FFD700":isInd?"#CC0022":"#FF1493";
   const photos=[strain.media,strain.media2,strain.media3].filter(Boolean);
-  const uid=useRef("spin"+Math.random().toString(36).slice(2,7)).current;
+  const uid="spin"+Math.random().toString(36).slice(2,7);
 
   useEffect(()=>{
     if(photos.length<=1) return;
@@ -807,17 +488,14 @@ function SpinningBud({strain,size=200}){
   );
 }
 
-// ── STRAIN CARD — memoized so it only re-renders when strain data actually changes ──
-const StrainCard=React.memo(function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartItem,discountSettings}){
+// ── STRAIN CARD ──
+function StrainCard({strain,t,onView,onAddToCart,cartQty,calcDiscount,calcCartItem,discountSettings}){
   const th=getTheme(strain.type);
   const ts=TIER_S[strain.tier]||TIER_S["TOP"];
   const [hov,setHov]=useState(false);
   const isSat=strain.type==="Sativa"||strain.type==="Sativa Hybrid";
   const isInd=strain.type==="Indica"||strain.type==="Indica Hybrid";
   const isHyb=!isSat&&!isInd;
-  // Faction operator for this strain type
-  const factionChar=isSat?CHARS.SPARK:isInd?CHARS.DEEP:CHARS.FLUX;
-  const factionGlow=isSat?"rgba(0,170,255,0.15)":isInd?"rgba(204,0,34,0.15)":"rgba(255,20,147,0.15)";
 
   // Hybrid gets dramatic split background
   const cardBg=isHyb
@@ -827,177 +505,140 @@ const StrainCard=React.memo(function StrainCard({strain,t,onView,onAddToCart,car
   const glowColor=isSat?"#00aaff":isInd?"#cc0022":th.a1;
   const glowColor2=isSat?"#00ddff":isInd?"#5500aa":"#cc0022";
 
-  const glowLine = isSat
-    ?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`
-    :isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`
-    :`linear-gradient(90deg,#ff1493,#cc0022)`;
-  const glowShadow = isSat?`0 0 10px #00aaff`:isInd?`0 0 10px #cc0022`:`0 0 10px #ff1493`;
-  const impactColor = isSat?"#00aaff":isInd?"#CC0022":"#FF1493";
-
   return(
-    <>
-    <style>{`
-      @media(max-width:640px){
-        .gc-card-${strain.id}{flex-direction:row!important;min-height:160px;}
-        .gc-media-${strain.id}{width:140px!important;min-width:140px!important;height:auto!important;align-self:stretch!important;flex-shrink:0;}
-        .gc-body-${strain.id}{padding:10px 12px 10px!important;}
-        .gc-name-${strain.id}{font-size:15px!important;margin-bottom:6px!important;min-height:unset!important;line-height:1.1!important;}
-        .gc-ratio-${strain.id}{margin-bottom:6px!important;}
-        .gc-ratio-${strain.id} .gc-ratio-bar{height:4px!important;}
-        .gc-ratio-${strain.id} .gc-ratio-labels{font-size:7px!important;}
-        .gc-ki-${strain.id}{padding:6px 8px!important;margin-bottom:6px!important;gap:6px!important;}
-        .gc-ki-${strain.id} .gc-thc{font-size:16px!important;}
-        .gc-ki-${strain.id} .gc-tier{font-size:9px!important;}
-        .gc-effects-${strain.id}{gap:3px!important;margin-bottom:6px!important;}
-        .gc-effects-${strain.id} span{font-size:7px!important;padding:2px 5px!important;}
-        .gc-bottom-${strain.id}{padding-top:8px!important;}
-        .gc-bottom-${strain.id} .gc-gmc{font-size:15px!important;}
-        .gc-bottom-${strain.id} .gc-addbtn{padding:4px 8px!important;font-size:8px!important;}
-        .gc-bottom-${strain.id} .gc-bits{font-size:7px!important;}
-      }
-    `}</style>
     <div onClick={()=>onView(strain)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      className={`gc-card-${strain.id}`}
-      style={{background:cardBg,border:`1px solid ${hov?th.a1:th.border}`,cursor:"pointer",
-        position:"relative",overflow:"hidden",transition:"all 0.3s",
-        boxShadow:hov?`0 0 30px ${th.a1}40,0 0 60px ${th.a1}10`:`0 0 10px ${th.border}`,
-        display:"flex",flexDirection:"column"}}>
+      style={{background:cardBg,border:`1px solid ${hov?th.a1:th.border}`,cursor:"pointer",position:"relative",overflow:"hidden",transition:"all 0.3s",
+        boxShadow:hov?`0 0 30px ${th.a1}40,0 0 60px ${th.a1}10`:`0 0 10px ${th.border}`}}>
 
-      {/* ── MEDIA ── */}
-      <div className={`gc-media-${strain.id}`}
-        style={{position:"relative",width:"100%",height:210,overflow:"hidden",
-          background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
+      {/* ── HERO MEDIA ── */}
+      <div style={{position:"relative",width:"100%",height:210,overflow:"hidden",background:`linear-gradient(180deg,${th.bgDeep} 0%,${th.bgCard} 100%)`,flexShrink:0}}>
         {strain.media?(
           <img src={strain.media} alt={strain.name}
-            style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",
-              display:"block",transition:"transform 0.4s",transform:hov?"scale(1.04)":"scale(1)"}}/>
+            style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center",display:"block",transition:"transform 0.4s",transform:hov?"scale(1.04)":"scale(1)"}}/>
         ):(
           <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+            {/* ambient glow behind bud */}
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:160,height:160,borderRadius:"50%",background:`radial-gradient(circle,${glowColor}20 0%,transparent 70%)`,pointerEvents:"none"}}/>
             <BudPlaceholder color1={glowColor} color2={glowColor2} size={180}/>
           </div>
         )}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:glowLine,opacity:hov?1:0.7,transition:"opacity 0.3s",boxShadow:glowShadow}}/>
-        {strain.tag&&<div style={{position:"absolute",top:8,right:8,fontSize:7,letterSpacing:2,color:th.a1,background:`${th.bgDeep}dd`,padding:"2px 6px",textTransform:"uppercase",border:`1px solid ${th.a1}40`,backdropFilter:"blur(4px)"}}>{strain.tag}</div>}
-        <div style={{position:"absolute",bottom:6,right:8,fontSize:28,opacity:strain.media?0.12:0.07,userSelect:"none",pointerEvents:"none"}}>{isSat?"⚡":isInd?"🌑":"🌀"}</div>
+        {/* bottom fade into card */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:60,background:`linear-gradient(transparent,${cardBg})`,pointerEvents:"none"}}/>
+        {/* top glow line */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,
+          background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022)`,
+          opacity:hov?1:0.7,transition:"opacity 0.3s",boxShadow:isSat?`0 0 10px #00aaff`:isInd?`0 0 10px #cc0022`:`0 0 10px #ff1493`}}/>
+        {/* tag badge over image */}
+        {strain.tag&&<div style={{position:"absolute",top:10,right:10,fontSize:8,letterSpacing:2,color:th.a1,background:`${th.bgDeep}dd`,padding:"3px 8px",textTransform:"uppercase",border:`1px solid ${th.a1}40`,backdropFilter:"blur(4px)"}}>{strain.tag}</div>}
+        {/* type watermark */}
+        <div style={{position:"absolute",bottom:8,right:10,fontSize:32,opacity:strain.media?0.15:0.07,userSelect:"none",pointerEvents:"none"}}>{isSat?"⚡":isInd?"🌑":"🌀"}</div>
       </div>
 
-      {/* ── BODY ── */}
-      <div className={`gc-body-${strain.id}`}
-        style={{padding:"18px 20px 20px",display:"flex",flexDirection:"column",flex:1}}>
+      {/* ── CARD BODY ── */}
+      <div style={{padding:"18px 20px 20px"}}>
 
-        {/* PROMO */}
-        {strain.promo?.active&&strain.promo.label&&(
-          <div style={{marginBottom:8,display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",
-            background:"linear-gradient(90deg,rgba(255,200,0,0.15),rgba(255,160,0,0.08),rgba(255,200,0,0.15))",
-            border:"1px solid rgba(255,180,0,0.5)",backgroundSize:"200% 100%",
-            animation:"promoShimmer 2s linear infinite",position:"relative",overflow:"hidden"}}>
-            <style>{`@keyframes promoShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
-            <span style={{fontSize:8,color:"#ffc800",fontWeight:900,letterSpacing:2,textTransform:"uppercase"}}>⚡ {strain.promo.label}</span>
-            {strain.promo.discount>0&&<span style={{fontSize:7,color:"#ffaa00"}}>−{strain.promo.discount}%</span>}
-          </div>
-        )}
-
-        {/* TYPE BADGE */}
-        <div style={{display:"inline-flex",alignItems:"center",gap:5,marginBottom:8,padding:"3px 10px",alignSelf:"flex-start",
-          background:isSat?`linear-gradient(90deg,#00aaff30,#00ddff20)`:isInd?`linear-gradient(90deg,#cc002230,#5500aa20)`:`linear-gradient(90deg,#ff149320,#cc002220)`,
-          border:`1px solid ${isSat?"#00aaff":isInd?"#cc0022":"rgba(255,20,100,0.4)"}`,
-          boxShadow:`0 0 8px ${isSat?"#00aaff40":isInd?"#cc002240":"#cc002220"}`}}>
-          <span style={{fontSize:9}}>{isSat?"⚡":isInd?"🌑":"🌀"}</span>
-          <span style={{fontSize:8,letterSpacing:3,color:isSat?"#00aaff":isInd?"#cc0022":th.a1,textTransform:"uppercase",fontWeight:700,textShadow:`0 0 8px ${isSat?"#00aaff":isInd?"#cc0022":th.a1}`}}>
-            {getLabel(strain.sativaRatio)}
-          </span>
+      {/* PROMO BADGE with lightning shimmer */}
+      {strain.promo?.active&&strain.promo.label&&(
+        <div style={{marginBottom:10,display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",
+          background:"linear-gradient(90deg,rgba(255,200,0,0.15),rgba(255,160,0,0.08),rgba(255,200,0,0.15))",
+          border:"1px solid rgba(255,180,0,0.5)",
+          backgroundSize:"200% 100%",
+          animation:"promoShimmer 2s linear infinite",
+          position:"relative",overflow:"hidden"}}>
+          <style>{`@keyframes promoShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
+          <span style={{fontSize:9,color:"#ffc800",fontWeight:900,letterSpacing:2,textTransform:"uppercase",textShadow:"0 0 8px rgba(255,200,0,0.8)"}}>⚡ {strain.promo.label}</span>
+          {strain.promo.discount>0&&<span style={{fontSize:8,color:"#ffaa00",letterSpacing:1}}>−{strain.promo.discount}%</span>}
         </div>
+      )}
 
-        {/* NAME */}
-        <div className={`gc-name-${strain.id}`}
-          style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,
-            color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,
-            marginBottom:16,minHeight:"2em"}}>
-          {isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}
+      {/* TYPE BADGE */}
+      <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:10,padding:"4px 12px",
+        background:isSat?`linear-gradient(90deg,#00aaff30,#00ddff20)`:isInd?`linear-gradient(90deg,#cc002230,#5500aa20)`:`linear-gradient(90deg,#ff149320,#cc002220)`,
+        border:`1px solid ${isSat?"#00aaff":isInd?"#cc0022":"rgba(255,20,100,0.4)"}`,boxShadow:`0 0 8px ${isSat?"#00aaff40":isInd?"#cc002240":"#cc002220"}`}}>
+        <span style={{fontSize:10}}>{isSat?"⚡":isInd?"🌑":"🌀"}</span>
+        <span style={{fontSize:9,letterSpacing:3,color:isSat?"#00aaff":isInd?"#cc0022":th.a1,textTransform:"uppercase",fontWeight:700,textShadow:`0 0 8px ${isSat?"#00aaff":isInd?"#cc0022":th.a1}`}}>
+          {getLabel(strain.sativaRatio)}
+        </span>
+      </div>
+
+      <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(20px,2.5vw,26px)",fontWeight:900,color:th.text,letterSpacing:"-0.02em",textTransform:"uppercase",lineHeight:0.95,marginBottom:20}}>
+        {isSat?<GlitchText text={strain.name} active={true}/>:strain.name}
+      </div>
+
+      {/* RATIO BAR — visually distinct */}
+      <div style={{marginBottom:20}}>
+        <div style={{height:6,borderRadius:3,overflow:"hidden",background:"rgba(255,255,255,0.06)",position:"relative"}}>
+          {isHyb?(
+            // hybrid: split from both ends
+            <>
+              <div style={{position:"absolute",left:0,top:0,height:"100%",width:strain.sativaRatio+"%",background:`linear-gradient(90deg,#00aaff,#00aaff88)`,boxShadow:`0 0 8px #00aaff`}}/>
+              <div style={{position:"absolute",right:0,top:0,height:"100%",width:(100-strain.sativaRatio)+"%",background:`linear-gradient(90deg,#cc002288,#cc0022)`,boxShadow:`0 0 8px #cc0022`}}/>
+            </>
+          ):(
+            <div style={{width:strain.sativaRatio+"%",height:"100%",background:isSat?`linear-gradient(90deg,#00aaff,#00ddff)`:`linear-gradient(90deg,#cc0022,#5500aa)`,boxShadow:`0 0 8px ${th.a1}`}}/>
+          )}
         </div>
-
-        {/* RATIO BAR */}
-        <div className={`gc-ratio-${strain.id}`} style={{marginBottom:16}}>
-          <div className="gc-ratio-bar" style={{height:6,borderRadius:3,overflow:"hidden",background:"rgba(255,255,255,0.06)",position:"relative"}}>
-            {isHyb?(
-              <>
-                <div style={{position:"absolute",left:0,top:0,height:"100%",width:strain.sativaRatio+"%",background:`linear-gradient(90deg,#00aaff,#00aaff88)`,boxShadow:`0 0 8px #00aaff`}}/>
-                <div style={{position:"absolute",right:0,top:0,height:"100%",width:(100-strain.sativaRatio)+"%",background:`linear-gradient(90deg,#cc002288,#cc0022)`,boxShadow:`0 0 8px #cc0022`}}/>
-              </>
-            ):(
-              <div style={{width:strain.sativaRatio+"%",height:"100%",background:isSat?`linear-gradient(90deg,#00aaff,#00ddff)`:`linear-gradient(90deg,#cc0022,#5500aa)`,boxShadow:`0 0 8px ${th.a1}`}}/>
-            )}
-          </div>
-          <div className="gc-ratio-labels" style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-            <span style={{fontSize:8,color:isSat?"#00aaff":isInd?"#996060":T.sativa.a1,letterSpacing:1}}>⚡ {strain.sativaRatio}% Spark</span>
-            <span style={{fontSize:8,color:isInd?"#cc0022":isSat?"#004466":T.indica.a1,letterSpacing:1}}>🌑 {100-strain.sativaRatio}% Deep</span>
-          </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
+          <span style={{fontSize:9,color:isSat?"#00aaff":isInd?"#996060":T.sativa.a1,letterSpacing:1,textShadow:`0 0 6px ${isSat?"#00aaff":"#ff149340"}`}}>⚡ {strain.sativaRatio}% Spark</span>
+          <span style={{fontSize:9,color:isInd?"#cc0022":isSat?"#004466":T.indica.a1,letterSpacing:1,textShadow:`0 0 6px ${isInd?"#cc0022":"#cc002240"}`}}>🌑 {100-strain.sativaRatio}% Deep</span>
         </div>
+      </div>
 
-        {/* KI ENERGY + IMPACT + TIER */}
-        <div className={`gc-ki-${strain.id}`}
-          style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"8px 10px",
-            background:"rgba(0,0,0,0.2)",borderTop:`1px solid ${th.border}`,borderBottom:`1px solid ${th.border}`}}>
-          <KiEnergy type={strain.type} size={44}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:2}}>Impact</div>
-            <div className="gc-thc" style={{fontSize:20,fontWeight:900,color:impactColor,fontFamily:"'Inter',sans-serif",textShadow:`0 0 12px ${impactColor}80`,lineHeight:1}}>{strain.thc}%</div>
-            <div style={{fontSize:7,letterSpacing:1,color:impactColor+"80",marginTop:2,textTransform:"uppercase"}}>{getLabel(strain.sativaRatio)}</div>
-          </div>
-          <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:2}}>Tier</div>
-            <div className="gc-tier" style={{fontSize:10,color:ts.color,letterSpacing:1,textShadow:`0 0 8px ${ts.color}`}}>{ts.icon} {strain.tier}</div>
-          </div>
+      {/* Impact + Ki Energy row */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,padding:"10px 12px",background:"rgba(0,0,0,0.2)",borderTop:`1px solid ${th.border}`,borderBottom:`1px solid ${th.border}`}}>
+        <KiEnergy type={strain.type} size={52}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:8,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:3}}>Impact</div>
+          <div style={{fontSize:22,fontWeight:900,color:isSat?"#00aaff":isInd?"#CC0022":"#FF1493",fontFamily:"'Inter',sans-serif",textShadow:`0 0 12px ${isSat?"#00aaff80":isInd?"#CC002280":"#FF149380"}`,lineHeight:1}}>{strain.thc}%</div>
+          <div style={{fontSize:8,letterSpacing:1,color:isSat?"#00aaff80":isInd?"#CC002250":"#FF149350",marginTop:2,textTransform:"uppercase"}}>{getLabel(strain.sativaRatio)}</div>
         </div>
-
-        {/* EFFECTS */}
-        <div className={`gc-effects-${strain.id}`}
-          style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:14,flex:1,alignContent:"flex-start"}}>
-          {strain.effects.map(e=>(
-            <span key={e} style={{fontSize:8,letterSpacing:1,color:th.dim,textTransform:"uppercase",border:`1px solid ${th.border}`,padding:"3px 7px"}}>{e}</span>
-          ))}
+        <div style={{textAlign:"right",flexShrink:0}}>
+          <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:3}}>Tier</div>
+          <div style={{fontSize:11,color:ts.color,letterSpacing:1,textShadow:`0 0 8px ${ts.color}`}}>{ts.icon} {strain.tier}</div>
         </div>
+      </div>
 
-        {/* BOTTOM — GMC + ADD */}
-        <div className={`gc-bottom-${strain.id}`}
-          style={{display:"flex",justifyContent:"space-between",alignItems:"center",
-            paddingTop:12,borderTop:`1px solid ${th.border}`,marginTop:"auto"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <GMCCoin size={16} theme={{amber:"#c8922a"}}/>
-            <div>
-              <div className="gc-gmc" style={{fontSize:17,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(200,146,42,0.6)",lineHeight:1}}>{strain.gmcCost}</div>
-              <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>GMC</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:20}}>
+        {strain.effects.map(e=>(
+          <span key={e} style={{fontSize:9,letterSpacing:1,color:th.dim,textTransform:"uppercase",border:`1px solid ${th.border}`,padding:"3px 8px"}}>{e}</span>
+        ))}
+      </div>
+
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:14,borderTop:`1px solid ${th.border}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <GMCCoin size={18} theme={{amber:"#e8a020"}}/>
+          <div>
+            <div style={{fontSize:18,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(232,160,32,0.6)",lineHeight:1}}>{strain.gmcCost}</div>
+            <div style={{fontSize:7,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>GMC</div>
+          </div>
+          {calcDiscount&&calcDiscount(strain,cartQty||1)>0&&(
+            <div style={{fontSize:8,color:"#00ff88",letterSpacing:1,background:"rgba(0,255,136,0.1)",padding:"2px 5px",border:"1px solid rgba(0,255,136,0.25)"}}>
+              -{calcDiscount(strain,cartQty||1)}%
             </div>
-            {calcDiscount&&calcDiscount(strain,cartQty||1)>0&&(
-              <div style={{fontSize:7,color:"#00ff88",letterSpacing:1,background:"rgba(0,255,136,0.1)",padding:"2px 4px",border:"1px solid rgba(0,255,136,0.25)"}}>
-                -{calcDiscount(strain,cartQty||1)}%
-              </div>
-            )}
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            {onAddToCart&&(
-              <button className="gc-addbtn" onClick={e=>{e.stopPropagation();onAddToCart&&onAddToCart();}}
-                style={{display:"flex",alignItems:"center",gap:3,padding:"5px 9px",
-                  background:cartQty>0?`${th.a1}20`:"transparent",
-                  border:`1px solid ${cartQty>0?th.a1:th.border}`,
-                  color:cartQty>0?th.a1:th.dim,cursor:"pointer",fontSize:8,fontWeight:700,
-                  letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",
-                  transition:"all 0.15s",boxShadow:cartQty>0?`0 0 8px ${th.a1}30`:"none"}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor=th.a1;e.currentTarget.style.color=th.a1;}}
-                onMouseLeave={e=>{if(!cartQty){e.currentTarget.style.borderColor=th.border;e.currentTarget.style.color=th.dim;}}}>
-                {cartQty>0?`◈ ${cartQty}g`:"+ Add"}
-              </button>
-            )}
-            <span className="gc-bits" style={{fontSize:8,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>{strain.stock} bits</span>
-          </div>
+          )}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          {onAddToCart&&(
+            <button onClick={e=>{e.stopPropagation();onAddToCart&&onAddToCart();}}
+              style={{display:"flex",alignItems:"center",gap:4,padding:"6px 10px",
+                background:cartQty>0?`${th.a1}20`:"transparent",
+                border:`1px solid ${cartQty>0?th.a1:th.border}`,
+                color:cartQty>0?th.a1:th.dim,cursor:"pointer",fontSize:9,fontWeight:700,
+                letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",
+                transition:"all 0.15s",boxShadow:cartQty>0?`0 0 8px ${th.a1}30`:"none"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=th.a1;e.currentTarget.style.color=th.a1;}}
+              onMouseLeave={e=>{if(!cartQty){e.currentTarget.style.borderColor=th.border;e.currentTarget.style.color=th.dim;}}}>
+              {cartQty>0?`◈ ${cartQty}g`:"+ Add"}
+            </button>
+          )}
+          <span style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>{strain.stock} bits</span>
         </div>
       </div>
+      </div>{/* end card body */}
+
     </div>
-    </>
   );
-});
+}
 
 // ── THE SHELF ──
 function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartItem,discountSettings}){
@@ -1007,15 +648,8 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
   const filtered=active==="ALL"?strains:(strains||[]).filter(s=>s.tier===active);
 
   return(
-    <div style={{minHeight:"100vh",background:th.bgDeep,paddingBottom:80,position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:th.bgDeep,paddingBottom:80}}>
       <Particles theme={th} count={20}/>
-      {/* ARES — Vault guardian, right side */}
-      <style>{`
-        @keyframes ares-guard{0%,100%{opacity:0.2;transform:translateY(0px)}50%{opacity:0.28;transform:translateY(-10px)}}
-        .ares-vault{position:absolute;right:-3%;top:0;height:85vh;width:auto;object-fit:contain;object-position:top right;opacity:0.22;animation:ares-guard 5s ease-in-out infinite;pointer-events:none;user-select:none;filter:drop-shadow(0 0 50px rgba(255,120,0,0.15));z-index:0;}
-        @media(max-width:768px){.ares-vault{right:unset;left:50%;transform:translateX(-50%);height:45vh;opacity:0.08;top:5%;}}
-      `}</style>
-      <img src={CHARS.ARES} alt="" aria-hidden="true" className="ares-vault"/>
       <div style={{position:"relative",zIndex:1,padding:"100px 5vw 40px"}}>
         <div style={{marginBottom:56}}>
           <div style={{fontSize:10,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.a1}`}}>— The Vault Collection</div>
@@ -1035,7 +669,6 @@ function TheShelf({t,user,strains,onView,cart,onAddToCart,calcDiscount,calcCartI
           </div>
         </div>
 
-        {/* Faction operator appears based on strain type filter — future feature placeholder */}
         {active==="ALL"?TIERS.map(tier=>{
           const ts=TIER_S[tier];
           const items=(strains||[]).filter(s=>s.tier===tier);
@@ -1120,48 +753,13 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
           ← {t.backToShelf}
         </button>
 
-        {/* ── HERO MEDIA — full width, tall as possible ── */}
+        {/* ── HERO MEDIA — static full width ── */}
         {strain.media&&(
-          <div style={{
-            width:"calc(100% + 10vw)",
-            marginLeft:"-5vw",
-            marginBottom:40,
-            position:"relative",
-            overflow:"hidden",
-          }}>
+          <div style={{width:"100%",maxHeight:420,overflow:"hidden",marginBottom:40,position:"relative"}}>
             <img src={strain.media} alt={strain.name}
-              style={{
-                width:"100%",
-                height:"auto",
-                maxHeight:"80vh",
-                objectFit:"contain",
-                objectPosition:"center",
-                display:"block",
-              }}/>
-            {/* Faction operator — ghost behind photo, right side */}
-            <img src={factionChar} alt="" aria-hidden="true" style={{
-              position:"absolute",
-              right:"-5%",bottom:0,
-              height:"95%",width:"auto",
-              objectFit:"contain",objectPosition:"bottom right",
-              opacity:0.12,
-              pointerEvents:"none",
-              userSelect:"none",
-              filter:`drop-shadow(0 0 30px ${factionGlow})`,
-              mixBlendMode:"screen",
-            }}/>
-            {/* bottom fade */}
-            <div style={{position:"absolute",bottom:0,left:0,right:0,height:60,
-              background:`linear-gradient(transparent,${th.bgDeep})`,pointerEvents:"none"}}/>
-            {/* left/right fade */}
-            <div style={{position:"absolute",top:0,left:0,bottom:0,width:40,
-              background:`linear-gradient(90deg,${th.bgDeep},transparent)`,pointerEvents:"none"}}/>
-            <div style={{position:"absolute",top:0,right:0,bottom:0,width:40,
-              background:`linear-gradient(270deg,${th.bgDeep},transparent)`,pointerEvents:"none"}}/>
-            {/* top color line */}
-            <div style={{position:"absolute",top:0,left:0,right:0,height:3,
-              background:isSat?`linear-gradient(90deg,#00aaff,#00ddff,#00aaff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa,#cc0022)`:`linear-gradient(90deg,#ff1493,#cc0022,#ff1493)`,
-              boxShadow:isSat?`0 0 15px #00aaff80`:isInd?`0 0 15px #cc002280`:`0 0 15px #ff149380`}}/>
+              style={{width:"100%",maxHeight:420,objectFit:"cover",objectPosition:"center",display:"block"}}/>
+            <div style={{position:"absolute",bottom:0,left:0,right:0,height:120,background:`linear-gradient(transparent,${th.bgDeep})`,pointerEvents:"none"}}/>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:isSat?`linear-gradient(90deg,#00aaff,#00ddff)`:isInd?`linear-gradient(90deg,#cc0022,#5500aa)`:`linear-gradient(90deg,#ff1493,#cc0022)`,boxShadow:isSat?`0 0 15px #00aaff`:isInd?`0 0 15px #cc0022`:`0 0 15px #ff1493`}}/>
           </div>
         )}
 
@@ -1180,7 +778,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
             </div>
 
             <h1 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:th.text,margin:"0 0 28px",textTransform:"uppercase",lineHeight:0.9,textShadow:`0 0 40px ${th.a1}20`}}>
-              {isSat?<GlitchText text={strain.name} active={true}/>:isInd?<PulseText text={strain.name} active={true}/>:<FluxText text={strain.name} active={true}/>}
+              {isSat?<GlitchText text={strain.name} active={true}/>:strain.name}
             </h1>
 
             {/* dramatic ratio bar */}
@@ -1211,7 +809,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
               </div>
               <div style={{background:th.bgCard,border:`1px solid ${th.border}`,padding:"18px 14px"}}>
                 <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:6}}>GMC</div>
-                <div style={{fontSize:"clamp(18px,2.5vw,28px)",fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(200,146,42,0.6)"}}>{strain.gmcCost}</div>
+                <div style={{fontSize:"clamp(18px,2.5vw,28px)",fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px rgba(232,160,32,0.6)"}}>{strain.gmcCost}</div>
               </div>
             </div>
 
@@ -1242,7 +840,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginBottom:20}}>
               <div style={{background:"rgba(0,0,0,0.3)",padding:"14px",border:`1px solid ${th.border}`}}>
                 <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:6}}>{t.total}</div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={18} theme={{amber:"#c8922a"}}/><span style={{fontSize:22,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px #e8a02060"}}>{total.toLocaleString()}</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={18} theme={{amber:"#e8a020"}}/><span style={{fontSize:22,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif",textShadow:"0 0 10px #e8a02060"}}>{total.toLocaleString()}</span></div>
               </div>
               <div style={{background:"rgba(0,0,0,0.3)",padding:"14px",border:`1px solid ${th.border}`}}>
                 <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:6}}>{t.stock}</div>
@@ -1263,7 +861,7 @@ function StrainDetail({strain,t,user,onBack,onClaim,onLogin,calcDiscount,calcCar
               <>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:14,padding:"10px 12px",background:"rgba(0,0,0,0.3)",border:`1px solid ${th.border}`}}>
                   <span style={{fontSize:10,letterSpacing:2,color:th.dim,textTransform:"uppercase"}}>Your Vault</span>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={14} theme={{amber:"#c8922a"}}/><span style={{fontSize:14,fontWeight:900,color:canClaim?th.a1:"#cc2244",fontFamily:"'Inter',sans-serif"}}>{(user.gmcBalance||0).toLocaleString()}</span></div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><GMCCoin size={14} theme={{amber:"#e8a020"}}/><span style={{fontSize:14,fontWeight:900,color:canClaim?th.a1:"#cc2244",fontFamily:"'Inter',sans-serif"}}>{(user.gmcBalance||0).toLocaleString()}</span></div>
                 </div>
                 <GBtn onClick={()=>canClaim&&onClaim(strain,qty)} color={canClaim?th.a1:"#444"} style={{width:"100%",cursor:canClaim?"pointer":"not-allowed",opacity:canClaim?1:0.4}}>
                   {canClaim?`${t.claimNow} — ${total.toLocaleString()} GMC`:"Insufficient GMC"}
@@ -1296,145 +894,151 @@ function GardenSection({t,onRedeem,onShelf,strains}){
   const currentStrain=allStrains.length>0?allStrains[tick%allStrains.length]:null;
 
   return(
-    <section style={{padding:"80px 5vw 100px",position:"relative",overflow:"hidden",
-      background:"linear-gradient(180deg,#080612 0%,#06040e 30%,#08050f 70%,#080612 100%)"}}>
-      {/* seamless bleed from above */}
-      <div style={{position:"absolute",top:0,left:0,right:0,height:100,background:"linear-gradient(180deg,#080612,transparent)",pointerEvents:"none",zIndex:1}}/>
+    <section style={{padding:"80px 5vw 100px",background:"#05040f",position:"relative",overflow:"hidden",borderTop:"1px solid rgba(0,212,255,0.12)",borderBottom:"1px solid rgba(0,212,255,0.12)"}}>
       <style>{`
-        @keyframes caveGlow{0%,100%{opacity:0.6}50%{opacity:1}}
-        @keyframes runeFlicker{0%,100%{opacity:0.15}50%{opacity:0.4}}
-        @keyframes goldPulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+        @keyframes vaultPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.15),0 0 60px rgba(0,212,255,0.08)}50%{box-shadow:0 0 0 16px rgba(0,212,255,0),0 0 100px rgba(0,212,255,0.2)}}
+        @keyframes boltSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        @keyframes boltSpinR{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+        @keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(200%)}}
         @keyframes codeFade{0%,100%{opacity:0.5}50%{opacity:1}}
         @keyframes glitch{0%,95%,100%{transform:translate(0)}96%{transform:translate(-2px,1px)}98%{transform:translate(2px,-1px)}}
+        @keyframes seam{0%,100%{opacity:0.4;box-shadow:0 0 6px #00d4ff}50%{opacity:1;box-shadow:0 0 14px #00d4ff,0 0 28px #00d4ff40}}
+        @keyframes goldShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+        @keyframes vaultBtnGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.3),inset 0 0 20px rgba(0,212,255,0.05)}50%{box-shadow:0 0 0 8px rgba(0,212,255,0),inset 0 0 30px rgba(0,212,255,0.12)}}
       `}</style>
 
-      {/* deep cave atmosphere — purple void from center */}
-      <div style={{position:"absolute",top:"20%",left:"50%",transform:"translateX(-50%)",width:"90vw",height:"70vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.12) 0%,rgba(123,47,255,0.05) 35%,transparent 65%)",pointerEvents:"none"}}/>
-      {/* gold torch glows — left and right pillars */}
-      <div style={{position:"absolute",top:"15%",left:"3%",width:4,height:"60%",background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.4),rgba(232,160,32,0.15),transparent)",animation:"caveGlow 3s ease-in-out infinite",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"15%",right:"3%",width:4,height:"60%",background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.4),rgba(232,160,32,0.15),transparent)",animation:"caveGlow 3s ease-in-out infinite 1.5s",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"10%",left:"2%",width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,146,42,0.5),transparent)",animation:"goldPulse 3s ease-in-out infinite",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"10%",right:"2%",width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,146,42,0.5),transparent)",animation:"goldPulse 3s ease-in-out infinite 1.5s",pointerEvents:"none"}}/>
-      {/* cave wall texture — stone-like horizontal lines */}
-      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(123,47,255,0.018) 1px,transparent 1px)",backgroundSize:"100% 40px",pointerEvents:"none"}}/>
-      {/* corner rune marks */}
+      {/* Grid overlay */}
+      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+      {/* Scanline */}
+      <div style={{position:"absolute",left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,rgba(0,212,255,0.12),transparent)",animation:"scanline 8s linear infinite",pointerEvents:"none"}}/>
+      {/* Corner accents */}
       {[[true,false,true,false],[true,false,false,true],[false,true,true,false],[false,true,false,true]].map(([bt,bb,bl,br],i)=>(
-        <div key={i} style={{position:"absolute",top:i<2?24:"auto",bottom:i>=2?24:"auto",left:i%2===0?24:"auto",right:i%2===1?24:"auto",width:24,height:24,borderTop:bt?"2px solid rgba(232,160,32,0.35)":"none",borderBottom:bb?"2px solid rgba(232,160,32,0.35)":"none",borderLeft:bl?"2px solid rgba(232,160,32,0.35)":"none",borderRight:br?"2px solid rgba(232,160,32,0.35)":"none",animation:"runeFlicker 3s ease-in-out infinite",pointerEvents:"none"}}/>
+        <div key={i} style={{position:"absolute",top:i<2?24:"auto",bottom:i>=2?24:"auto",left:i%2===0?24:"auto",right:i%2===1?24:"auto",width:20,height:20,borderTop:bt?"2px solid rgba(0,212,255,0.4)":"none",borderBottom:bb?"2px solid rgba(0,212,255,0.4)":"none",borderLeft:bl?"2px solid rgba(0,212,255,0.4)":"none",borderRight:br?"2px solid rgba(0,212,255,0.4)":"none",pointerEvents:"none"}}/>
       ))}
 
-      <div style={{position:"relative",zIndex:2,display:"flex",flexDirection:"column",alignItems:"center"}}>
+      <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
 
-        {/* TOP label — ancient inscription */}
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
-          <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(200,146,42,0.5))"}}/>
-          <span style={{fontSize:8,letterSpacing:5,color:"rgba(232,160,32,0.8)",textTransform:"uppercase",textShadow:"0 0 10px rgba(200,146,42,0.4)",whiteSpace:"nowrap"}}>⬡ AZRON'S SACRED VAULT ⬡</span>
-          <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.5),transparent)"}}/>
+        {/* TOP — label */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:24}}>
+          <div style={{width:6,height:6,background:"#00d4ff",boxShadow:"0 0 8px #00d4ff",animation:"seam 2s ease-in-out infinite"}}/>
+          <div style={{fontSize:9,letterSpacing:5,color:"#00d4ff",textTransform:"uppercase",textShadow:"0 0 8px #00d4ff"}}>Classified Access · Level 1</div>
+          <div style={{width:6,height:6,background:"#00d4ff",boxShadow:"0 0 8px #00d4ff",animation:"seam 2s ease-in-out infinite"}}/>
         </div>
 
         {/* Title */}
-        <div style={{textAlign:"center",marginBottom:48}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
           <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:"#e8e0f0",margin:"0",textTransform:"uppercase",lineHeight:0.9,animation:"glitch 8s ease-in-out infinite"}}>The</h2>
-          <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:"#c8922a",margin:"0 0 16px",textTransform:"uppercase",lineHeight:0.9,textShadow:"0 0 30px rgba(232,160,32,0.8),0 0 60px rgba(232,160,32,0.3)"}}>Vault</h2>
-          <p style={{fontSize:14,color:"#7a7090",lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Every batch is rare. Every claim is yours alone. Exotic, premium and top-tier batches — guarded by AZRON, waiting for the worthy.</p>
+          <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(40px,7vw,88px)",fontWeight:900,letterSpacing:"-0.03em",color:"#00d4ff",margin:"0 0 16px",textTransform:"uppercase",lineHeight:0.9,textShadow:"0 0 30px #00d4ff,0 0 60px #00d4ff40"}}>Vault</h2>
+          <p style={{fontSize:14,color:"#7a7090",lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Every batch is rare. Every claim is yours alone. Exotic, premium and top-tier batches — encrypted, secured, and waiting.</p>
         </div>
 
-        {/* CAVE ENTRANCE — godly arch replacing the spinning safe */}
-        <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:48,width:"min(520px,90vw)"}}>
-          {/* cave entrance glow */}
-          <div style={{position:"absolute",top:"10%",left:"50%",transform:"translateX(-50%)",width:"70%",height:"70%",borderRadius:"50%",background:"radial-gradient(circle,rgba(232,160,32,0.15) 0%,rgba(123,47,255,0.1) 40%,transparent 70%)",animation:"caveGlow 4s ease-in-out infinite",pointerEvents:"none"}}/>
+        {/* VAULT DOOR — centered, big */}
+        <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:36}}>
+          {/* Outer ambient glow */}
+          <div style={{position:"absolute",width:"120%",height:"120%",borderRadius:"50%",background:"radial-gradient(circle,rgba(0,212,255,0.07) 0%,transparent 70%)",pointerEvents:"none"}}/>
 
-          <svg viewBox="0 0 520 440" width="min(520px,90vw)" style={{display:"block",filter:"drop-shadow(0 0 30px rgba(123,47,255,0.3))"}}>
-            {/* cave floor */}
-            <rect x="0" y="380" width="520" height="60" fill="#06040e"/>
+          <svg viewBox="0 0 400 400" width="min(480px,80vw)" height="min(480px,80vw)" style={{display:"block",filter:"drop-shadow(0 0 24px rgba(0,212,255,0.35))"}}>
+            {/* Outer ring */}
+            <circle cx="200" cy="200" r="188" fill="none" stroke="rgba(0,212,255,0.15)" strokeWidth="1"/>
+            <circle cx="200" cy="200" r="186" fill="#080614" stroke="rgba(0,212,255,0.06)" strokeWidth="0.5"/>
 
-            {/* left pillar */}
-            <rect x="40" y="80" width="60" height="300" fill="#0a0818" stroke="rgba(232,160,32,0.25)" strokeWidth="1"/>
-            {/* left pillar gold vein */}
-            <line x1="70" y1="90" x2="70" y2="370" stroke="rgba(232,160,32,0.3)" strokeWidth="1.5" strokeDasharray="8 12"/>
-            <rect x="30" y="70" width="80" height="20" fill="#0a0818" stroke="rgba(200,146,42,0.4)" strokeWidth="1"/>
-            {/* left torch */}
-            <rect x="60" y="55" width="20" height="30" fill="rgba(232,160,32,0.2)" stroke="rgba(200,146,42,0.6)" strokeWidth="1"/>
-            <ellipse cx="70" cy="55" rx="12" ry="18" fill="rgba(200,146,42,0.4)" style={{filter:"blur(3px)",animation:"goldPulse 2s ease-in-out infinite"}}/>
+            {/* Rotating outer bolt ring */}
+            <g style={{transformOrigin:"200px 200px",animation:"boltSpin 24s linear infinite"}}>
+              {Array.from({length:16},(_,i)=>{
+                const angle=i*(360/16)*Math.PI/180;
+                const x=200+175*Math.sin(angle);
+                const y=200-175*Math.cos(angle);
+                return <circle key={i} cx={x} cy={y} r="6" fill="#0d0b24" stroke="rgba(0,212,255,0.5)" strokeWidth="1.5"/>;
+              })}
+            </g>
 
-            {/* right pillar */}
-            <rect x="420" y="80" width="60" height="300" fill="#0a0818" stroke="rgba(232,160,32,0.25)" strokeWidth="1"/>
-            {/* right pillar gold vein */}
-            <line x1="450" y1="90" x2="450" y2="370" stroke="rgba(232,160,32,0.3)" strokeWidth="1.5" strokeDasharray="8 12"/>
-            <rect x="410" y="70" width="80" height="20" fill="#0a0818" stroke="rgba(200,146,42,0.4)" strokeWidth="1"/>
-            {/* right torch */}
-            <rect x="440" y="55" width="20" height="30" fill="rgba(232,160,32,0.2)" stroke="rgba(200,146,42,0.6)" strokeWidth="1"/>
-            <ellipse cx="450" cy="55" rx="12" ry="18" fill="rgba(200,146,42,0.4)" style={{filter:"blur(3px)",animation:"goldPulse 2s ease-in-out infinite 1s"}}/>
+            {/* Counter-rotating dashed ring */}
+            <g style={{transformOrigin:"200px 200px",animation:"boltSpinR 16s linear infinite"}}>
+              <circle cx="200" cy="200" r="155" fill="none" stroke="rgba(0,212,255,0.1)" strokeWidth="1" strokeDasharray="6 10"/>
+            </g>
 
-            {/* arch top */}
-            <path d="M 100 80 Q 260 -20 420 80" fill="none" stroke="rgba(200,146,42,0.5)" strokeWidth="2"/>
-            <path d="M 110 80 Q 260 -10 410 80" fill="none" stroke="rgba(123,47,255,0.3)" strokeWidth="1"/>
-            {/* arch circuit veins */}
-            {[0.25,0.5,0.75].map((t,i)=>{
-              const x=100+(420-100)*t;
-              const y=80-Math.sin(Math.PI*t)*100;
-              return <circle key={i} cx={x} cy={y} r="4" fill="none" stroke="rgba(200,146,42,0.5)" strokeWidth="1.5" style={{animation:`runeFlicker ${2+i*0.5}s ease-in-out infinite ${i*0.7}s`}}/>;
+            {/* Second counter ring */}
+            <g style={{transformOrigin:"200px 200px",animation:"boltSpin 30s linear infinite"}}>
+              <circle cx="200" cy="200" r="140" fill="none" stroke="rgba(123,47,255,0.12)" strokeWidth="0.5" strokeDasharray="2 14"/>
+            </g>
+
+            {/* Main vault door face */}
+            <circle cx="200" cy="200" r="130" fill="#0a0820" stroke="rgba(0,212,255,0.3)" strokeWidth="2"/>
+
+            {/* Cross seam lines */}
+            {[0,45,90,135].map(a=>(
+              <line key={a}
+                x1={200+122*Math.cos(a*Math.PI/180)} y1={200+122*Math.sin(a*Math.PI/180)}
+                x2={200-122*Math.cos(a*Math.PI/180)} y2={200-122*Math.sin(a*Math.PI/180)}
+                stroke="rgba(0,212,255,0.06)" strokeWidth="1"/>
+            ))}
+
+            {/* Inner mechanism ring */}
+            <circle cx="200" cy="200" r="90" fill="none" stroke="rgba(0,212,255,0.22)" strokeWidth="2"/>
+            <circle cx="200" cy="200" r="88" fill="#07061a"/>
+
+            {/* 8 lock bolts */}
+            {Array.from({length:8},(_,i)=>{
+              const a=i*(360/8)*Math.PI/180;
+              const x=200+90*Math.sin(a);
+              const y=200-90*Math.cos(a);
+              return(
+                <g key={i} style={{transformOrigin:`${x}px ${y}px`,transform:`rotate(${i*45}deg)`}}>
+                  <rect x={x-5} y={y-9} width="10" height="18" rx="2" fill="#0d0b24" stroke="rgba(0,212,255,0.55)" strokeWidth="1.2"/>
+                </g>
+              );
             })}
 
-            {/* cave interior darkness with purple glow */}
-            <path d="M 100 80 Q 260 -20 420 80 L 420 380 L 100 380 Z" fill="rgba(6,4,14,0.95)"/>
-            <ellipse cx="260" cy="250" rx="140" ry="120" fill="radial-gradient(circle,rgba(123,47,255,0.2),transparent)" style={{filter:"blur(20px)"}}/>
+            {/* Glowing seam ring */}
+            <circle cx="200" cy="200" r="130" fill="none" stroke="rgba(0,212,255,0.5)" strokeWidth="0.8"
+              strokeDasharray="25 400" style={{animation:"seam 3s ease-in-out infinite"}}/>
 
-            {/* inner cave glow — purple/gold */}
-            <ellipse cx="260" cy="260" rx="100" ry="80" fill="rgba(123,47,255,0.08)" style={{animation:"caveGlow 3s ease-in-out infinite"}}/>
-            <ellipse cx="260" cy="300" rx="80" ry="40" fill="rgba(232,160,32,0.06)" style={{animation:"caveGlow 3s ease-in-out infinite 1.5s"}}/>
+            {/* Center dial background */}
+            <circle cx="200" cy="200" r="56" fill="#050412" stroke="rgba(0,212,255,0.4)" strokeWidth="2"
+              style={{animation:"vaultPulse 3s ease-in-out infinite"}}/>
+            <circle cx="200" cy="200" r="51" fill="none" stroke="rgba(0,212,255,0.12)" strokeWidth="1"/>
 
-            {/* ancient rune marks on floor */}
-            {[-80,-30,30,80].map((ox,i)=>(
-              <g key={i}>
-                <line x1={260+ox} y1="355" x2={260+ox} y2="375" stroke="rgba(232,160,32,0.25)" strokeWidth="1"/>
-                <line x1={260+ox-6} y1="362" x2={260+ox+6} y2="362" stroke="rgba(232,160,32,0.25)" strokeWidth="1"/>
-              </g>
-            ))}
-
-            {/* tier treasure chests — floating inside cave */}
-            {[
-              {x:155,y:280,color:"#c8922a",label:"EXOTIC",delay:"0s"},
-              {x:260,y:240,color:"#7b2fff",label:"PREMIUM",delay:"0.8s"},
-              {x:365,y:280,color:"#00d4ff",label:"TOP",delay:"1.6s"},
-            ].map(({x,y,color,label,delay})=>(
-              <g key={label} style={{animation:`treasure-float 3s ease-in-out infinite`,animationDelay:delay}}>
-                {/* chest body */}
-                <rect x={x-20} y={y} width="40" height="28" fill={`${color}15`} stroke={`${color}60`} strokeWidth="1.5" rx="2"/>
-                {/* chest lid */}
-                <rect x={x-20} y={y-10} width="40" height="14" fill={`${color}25`} stroke={`${color}80`} strokeWidth="1.5" rx="2"/>
-                {/* chest lock */}
-                <rect x={x-5} y={y-3} width="10" height="8" fill={`${color}40`} stroke={color} strokeWidth="1" rx="1"/>
-                {/* chest glow */}
-                <ellipse cx={x} cy={y+28} rx="20" ry="6" fill={`${color}20`} style={{filter:"blur(4px)"}}/>
-                {/* label */}
-                <text x={x} y={y+48} textAnchor="middle" fill={color} fontSize="7" fontFamily="Inter,sans-serif" letterSpacing="2" opacity="0.8">{label}</text>
-              </g>
-            ))}
-
-            {/* cave entrance bottom arch shadow */}
-            <rect x="100" y="370" width="320" height="20" fill="rgba(0,0,0,0.6)"/>
+            {/* Status dot */}
+            <circle cx="200" cy="274" r="5" fill="#00ff88" style={{filter:"drop-shadow(0 0 6px #00ff88)",animation:"seam 1.5s ease-in-out infinite"}}/>
+            <text x="200" y="292" textAnchor="middle" fill="rgba(0,212,255,0.45)" fontSize="7.5" fontFamily="Inter,sans-serif" letterSpacing="3">SEALED</text>
           </svg>
 
-          {/* Enter cave button — overlaid center of arch */}
+          {/* Open Vault button — overlaid on center dial */}
           <button
             onClick={onShelf}
             onMouseEnter={()=>setHoverVault(true)}
             onMouseLeave={()=>setHoverVault(false)}
             style={{
               position:"absolute",
-              top:"52%",left:"50%",transform:"translate(-50%,-50%)",
-              padding:"14px 28px",
-              background:hoverVault?"rgba(232,160,32,0.2)":"rgba(200,146,42,0.08)",
-              border:`1px solid ${hoverVault?"rgba(232,160,32,0.9)":"rgba(200,146,42,0.4)"}`,
+              width:"min(112px,22vw)",height:"min(112px,22vw)",
+              borderRadius:"50%",
+              background:hoverVault
+                ?"linear-gradient(135deg,rgba(0,212,255,0.25),rgba(0,212,255,0.1))"
+                :"linear-gradient(135deg,rgba(0,212,255,0.1),rgba(0,212,255,0.04))",
+              border:hoverVault?"2px solid rgba(0,212,255,0.9)":"2px solid rgba(0,212,255,0.4)",
               cursor:"pointer",
-              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
               transition:"all 0.3s",
-              boxShadow:hoverVault?"0 0 30px rgba(200,146,42,0.4),0 0 60px rgba(232,160,32,0.1)":"0 0 15px rgba(232,160,32,0.1)",
+              boxShadow:hoverVault
+                ?"0 0 0 8px rgba(0,212,255,0),0 0 40px rgba(0,212,255,0.4),inset 0 0 20px rgba(0,212,255,0.1)"
+                :"0 0 20px rgba(0,212,255,0.1)",
+              animation:hoverVault?undefined:"vaultBtnGlow 3s ease-in-out infinite",
             }}>
-            <span style={{fontSize:"clamp(8px,1.5vw,10px)",letterSpacing:3,color:hoverVault?"#c8922a":"rgba(232,160,32,0.7)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:900,textAlign:"center",lineHeight:1.4}}>
-              {hoverVault?"ENTERING...":"ENTER THE VAULT"}
+            <span style={{fontSize:"clamp(7px,1.5vw,10px)",letterSpacing:2,color:hoverVault?"#00d4ff":"rgba(0,212,255,0.7)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:900,textAlign:"center",lineHeight:1.3,display:"flex",flexDirection:"column",alignItems:"center"}}>
+              {hoverVault?<span>UNLOCKING...</span>:<><span>OPEN</span><span>VAULT</span></>}
             </span>
           </button>
+
+          {/* Floating tier tags */}
+          {[
+            {label:"EXOTIC",color:"#e8a020",top:"10%",left:"-2%"},
+            {label:"PREMIUM",color:"#7b2fff",top:"38%",right:"-4%"},
+            {label:"TOP",color:"#00d4ff",bottom:"12%",left:"2%"},
+          ].map(({label,color,top,bottom,left,right})=>(
+            <div key={label} style={{position:"absolute",top,bottom,left,right,padding:"4px 10px",background:"rgba(8,6,20,0.92)",border:`1px solid ${color}50`,fontSize:8,letterSpacing:3,color,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",backdropFilter:"blur(4px)",boxShadow:`0 0 10px ${color}20`,whiteSpace:"nowrap",pointerEvents:"none"}}>
+              {label}
+            </div>
+          ))}
         </div>
 
         {/* BOTTOM — stats + active batch + GMC button */}
@@ -1462,7 +1066,7 @@ function GardenSection({t,onRedeem,onShelf,strains}){
               <div style={{width:7,height:7,borderRadius:"50%",background:"#00ff88",boxShadow:"0 0 6px #00ff88",flexShrink:0}}/>
               <span style={{fontSize:9,letterSpacing:3,color:"#7a7090",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",flexShrink:0}}>Active Batch:</span>
               <span style={{fontSize:11,letterSpacing:2,color:"#00d4ff",fontFamily:"'Inter',sans-serif",fontWeight:700,animation:"codeFade 1.5s ease-in-out infinite",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentStrain.name}</span>
-              <span style={{marginLeft:"auto",fontSize:8,color:"#c8922a",letterSpacing:1,flexShrink:0}}>{currentStrain.tier}</span>
+              <span style={{marginLeft:"auto",fontSize:8,color:"#e8a020",letterSpacing:1,flexShrink:0}}>{currentStrain.tier}</span>
             </div>
           )}
 
@@ -1480,11 +1084,11 @@ function GardenSection({t,onRedeem,onShelf,strains}){
               fontSize:12,fontWeight:900,letterSpacing:3,
               textTransform:"uppercase",
               fontFamily:"'Inter',sans-serif",
-              boxShadow:"0 0 20px rgba(200,146,42,0.4),0 0 40px rgba(232,160,32,0.15)",
+              boxShadow:"0 0 20px rgba(232,160,32,0.4),0 0 40px rgba(232,160,32,0.15)",
               transition:"transform 0.2s,box-shadow 0.2s",
             }}
-            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 30px rgba(200,146,42,0.6),0 0 60px rgba(232,160,32,0.25)";}}
-            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 20px rgba(200,146,42,0.4),0 0 40px rgba(232,160,32,0.15)";}}>
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 30px rgba(232,160,32,0.6),0 0 60px rgba(232,160,32,0.25)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 20px rgba(232,160,32,0.4),0 0 40px rgba(232,160,32,0.15)";}}>
             💎 Load GMC · Level Up
           </button>
 
@@ -1503,402 +1107,205 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
     ?featuredIds.map(id=>allStrains.find(s=>s.id===id)).filter(Boolean)
     :allStrains.slice(0,3);
   return(
-    <div style={{position:"relative",background:"#080612"}}>
-      <style>{`
-        @keyframes az-drift1{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
-        @keyframes az-drift2{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
-        @keyframes goldDrift{0%{transform:translateY(0px) translateX(0px)}33%{transform:translateY(-20px) translateX(8px)}66%{transform:translateY(-8px) translateX(-6px)}100%{transform:translateY(0px) translateX(0px)}}
-        @keyframes torchFlicker{0%,100%{opacity:0.4}50%{opacity:0.7}}
-        @keyframes floatCrystal{0%,100%{transform:translateY(0px)}50%{transform:translateY(-20px)}}
-        @keyframes floatCrystal2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-15px)}}
-        @keyframes floatCrystal3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-18px)}}
-      `}</style>
-
-      {/* ── ONE UNIFIED BACKGROUND — AZRON's world, runs behind ALL sections ── */}
-
-      {/* purple presence — top right, where AZRON stands */}
-      <div style={{position:"fixed",top:0,right:0,width:"55vw",height:"55vh",
-        background:"radial-gradient(ellipse at top right,rgba(123,47,255,0.09) 0%,rgba(123,47,255,0.03) 50%,transparent 75%)",
-        pointerEvents:"none",zIndex:0}}/>
-
-      {/* gold ancient warmth — mid page center */}
-      <div style={{position:"fixed",top:"35%",left:"50%",transform:"translate(-50%,-50%)",
-        width:"70vw",height:"50vh",
-        background:"radial-gradient(ellipse,rgba(200,146,42,0.05) 0%,transparent 65%)",
-        pointerEvents:"none",zIndex:0}}/>
-
-      {/* gold floor glow — bottom of realm */}
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
-        width:"45vw",height:"25vh",
-        background:"radial-gradient(ellipse at bottom,rgba(200,146,42,0.055) 0%,transparent 65%)",
-        pointerEvents:"none",zIndex:0}}/>
-
-      {/* LEFT gold pillar line — full page height */}
-      <div style={{position:"fixed",top:0,left:"3vw",width:1,height:"100vh",
-        background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.18) 30%,rgba(200,146,42,0.1) 70%,transparent)",
-        animation:"az-drift1 14s linear infinite",
-        pointerEvents:"none",zIndex:0}}/>
-
-      {/* RIGHT purple pillar line — full page height */}
-      <div style={{position:"fixed",top:0,right:"3vw",width:1,height:"100vh",
-        background:"linear-gradient(180deg,transparent,rgba(123,47,255,0.14) 30%,rgba(123,47,255,0.07) 70%,transparent)",
-        animation:"az-drift2 20s linear infinite 4s",
-        pointerEvents:"none",zIndex:0}}/>
-
-      {/* stone texture — ultra subtle horizontal lines full page */}
-      <div style={{position:"fixed",inset:0,
-        backgroundImage:"linear-gradient(rgba(200,146,42,0.012) 1px,transparent 1px)",
-        backgroundSize:"100% 44px",
-        pointerEvents:"none",zIndex:0}}/>
-      {/* ── HERO — GLASSCORP HERO SYSTEM v2 ── */}
-      <style>{`
-        @keyframes marqueeAnim{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-        /* ── BUTTONS — exact from spec ── */
-        .gc-btn-vault{
-          padding:14px 32px;
-          border:1px solid #00d4ff;
-          background:rgba(8,6,18,0.55);
-          color:#00d4ff;
-          cursor:pointer;
-          font-family:'Inter',sans-serif;
-          font-weight:700;
-          font-size:14px;
-          letter-spacing:0.15em;
-          text-transform:uppercase;
-          transition:all 0.3s ease;
-          border-radius:2px;
-          box-shadow:0 0 12px rgba(0,212,255,0.12);
-        }
-        .gc-btn-vault:hover{
-          transform:translateY(-2px);
-          box-shadow:0 0 20px rgba(0,212,255,0.22);
-          background:rgba(8,6,18,0.75);
-        }
-        .gc-btn-gmc{
-          padding:14px 32px;
-          border:1px solid #c8922a;
-          background:rgba(8,6,18,0.55);
-          color:#c8922a;
-          cursor:pointer;
-          font-family:'Inter',sans-serif;
-          font-weight:700;
-          font-size:14px;
-          letter-spacing:0.15em;
-          text-transform:uppercase;
-          transition:all 0.3s ease;
-          border-radius:2px;
-          box-shadow:0 0 12px rgba(200,146,42,0.12);
-        }
-        .gc-btn-gmc:hover{
-          transform:translateY(-2px);
-          box-shadow:0 0 20px rgba(200,146,42,0.22);
-          background:rgba(8,6,18,0.75);
-        }
-
-        /* ── RESPONSIVE — exact from spec ── */
-        @media(min-width:1440px){
-          .gc-hero-main{left:5%!important;bottom:10%!important;}
-          .gc-hero-btns{left:8%!important;top:45%!important;}
-        }
-        @media(max-width:1439px) and (min-width:768px){
-          .gc-hero-main{left:50%!important;transform:translateX(-50%)!important;bottom:8%!important;align-items:center!important;text-align:center!important;}
-          .gc-hero-btns{left:50%!important;top:auto!important;bottom:28%!important;transform:translateX(-50%)!important;align-items:center!important;}
-          .gc-corner-tr{display:none!important;}
-          .gc-corner-br{display:none!important;}
-        }
-        @media(max-width:767px){
-          .gc-hero-main{left:50%!important;transform:translateX(-50%)!important;bottom:6%!important;align-items:center!important;text-align:center!important;}
-          .gc-hero-btns{left:50%!important;top:auto!important;bottom:32%!important;transform:translateX(-50%)!important;align-items:center!important;}
-          .gc-glasscorp{font-size:clamp(36px,12vw,64px)!important;}
-          .gc-arena-txt{font-size:clamp(34px,11vw,60px)!important;}
-          .gc-corner-tr{display:none!important;}
-          .gc-corner-br{display:none!important;}
-        }
-      `}</style>
-
+    <div>
+      {/* HERO — AZRON full bleed */}
       <section style={{minHeight:"100vh",position:"relative",overflow:"hidden",background:"#080612"}}>
+        <style>{`
+          @keyframes marqueeAnim{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+          @keyframes halospin{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+          @keyframes halospinR{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(-360deg)}}
+          @keyframes goldpulse{0%,100%{opacity:0.35}50%{opacity:0.7}}
+          @keyframes azronFadeIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:scale(1)}}
+          @keyframes btnGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0)}50%{box-shadow:0 0 18px 2px rgba(0,212,255,0.18)}}
+          @keyframes btnGlowGold{0%,100%{box-shadow:0 0 0 0 rgba(200,146,42,0)}50%{box-shadow:0 0 18px 2px rgba(200,146,42,0.18)}}
+        `}</style>
 
-        {/* LAYER 1 — AZRON centered background */}
-        <div style={{position:"absolute",inset:0,
-          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg1.png)`,
+        {/* ── LAYER 1: AZRON image — full bleed center ── */}
+        <div style={{
+          position:"absolute",inset:0,
+          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/AZRON.png)`,
           backgroundSize:"cover",
-          backgroundPosition:"center center",
+          backgroundPosition:"center top",
           backgroundRepeat:"no-repeat",
-          pointerEvents:"none"}}/>
+          animation:"azronFadeIn 1.2s ease-out forwards",
+        }}/>
 
-        {/* LAYER 2 — darkness that lets AZRON emerge */}
-        <div style={{position:"absolute",inset:0,
-          background:"linear-gradient(180deg,rgba(8,6,18,0.55) 0%,rgba(8,6,18,0.2) 40%,rgba(8,6,18,0.6) 100%)",
-          pointerEvents:"none"}}/>
+        {/* ── LAYER 2: Left darkness veil — so buttons readable ── */}
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(100deg,rgba(8,6,18,0.92) 0%,rgba(8,6,18,0.6) 38%,rgba(8,6,18,0.0) 60%)",pointerEvents:"none"}}/>
 
-        {/* LAYER 3 — very subtle purple atmosphere, NOT dominant */}
-        <div style={{position:"absolute",inset:0,
-          background:"radial-gradient(circle at 50% 35%,rgba(123,47,255,0.08) 0%,transparent 55%)",
-          pointerEvents:"none"}}/>
+        {/* ── LAYER 3: Purple sacred atmosphere bloom behind AZRON head ── */}
+        <div style={{position:"absolute",top:"8%",left:"50%",transform:"translateX(-50%)",width:"min(700px,80vw)",height:"min(700px,80vw)",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.22) 0%,rgba(123,47,255,0.08) 40%,transparent 70%)",pointerEvents:"none"}}/>
+        {/* Inner intense bloom */}
+        <div style={{position:"absolute",top:"8%",left:"50%",transform:"translateX(-50%)",width:"min(320px,40vw)",height:"min(320px,40vw)",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.3) 0%,transparent 65%)",pointerEvents:"none"}}/>
 
-        {/* LAYER 4 — vignette edges */}
-        <div style={{position:"absolute",inset:0,
-          background:"radial-gradient(circle at 50% 40%,transparent 40%,rgba(0,0,0,0.6) 100%)",
-          pointerEvents:"none"}}/>
+        {/* ── LAYER 4: Sacred geometry halo rings ── */}
+        {/* Outer slow spin ring */}
+        <div style={{position:"absolute",top:"22%",left:"50%",width:"min(480px,55vw)",height:"min(480px,55vw)",border:"1px solid rgba(123,47,255,0.2)",borderRadius:"50%",borderTopColor:"rgba(200,146,42,0.25)",animation:"halospin 28s linear infinite",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
+        {/* Mid counter-spin dashed */}
+        <div style={{position:"absolute",top:"22%",left:"50%",width:"min(360px,42vw)",height:"min(360px,42vw)",border:"1px dashed rgba(123,47,255,0.15)",borderRadius:"50%",animation:"halospinR 18s linear infinite",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
+        {/* Inner gold ring — pulsing */}
+        <div style={{position:"absolute",top:"22%",left:"50%",width:"min(240px,28vw)",height:"min(240px,28vw)",border:"1px solid rgba(200,146,42,0.2)",borderRadius:"50%",animation:"goldpulse 4s ease-in-out infinite",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
 
-        {/* LAYER 5 — bottom darkness for text readability */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:"35%",
-          background:"linear-gradient(to bottom,transparent,rgba(8,6,18,0.7))",
-          pointerEvents:"none"}}/>
-
-        {/* ── CORNER DECORATIONS ── */}
-
-        {/* top left */}
-        <div style={{position:"absolute",top:24,left:28,zIndex:3,pointerEvents:"none"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:5,height:5,background:"#c8922a",opacity:0.8,transform:"rotate(45deg)"}}/>
-            <span style={{fontSize:12,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
-              RARE BATCHES · REAL UPGRADES
-            </span>
+        {/* ── LAYER 5: Gold vertical circuit lines — sides ── */}
+        <div style={{position:"absolute",top:0,bottom:0,left:"clamp(16px,3vw,48px)",width:1,background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.25) 20%,rgba(200,146,42,0.25) 80%,transparent)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:0,bottom:0,right:"clamp(16px,3vw,48px)",width:1,background:"linear-gradient(180deg,transparent,rgba(200,146,42,0.25) 20%,rgba(200,146,42,0.25) 80%,transparent)",pointerEvents:"none"}}/>
+        {/* Gold horizontal tick marks on side lines */}
+        {[20,35,50,65,80].map(pct=>(
+          <div key={pct}>
+            <div style={{position:"absolute",top:`${pct}%`,left:"clamp(12px,2.5vw,44px)",width:6,height:1,background:"rgba(200,146,42,0.5)",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",top:`${pct}%`,right:"clamp(12px,2.5vw,44px)",width:6,height:1,background:"rgba(200,146,42,0.5)",pointerEvents:"none"}}/>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,marginLeft:13}}>
-            <div style={{width:5,height:5,background:"none",border:"1px solid rgba(200,146,42,0.5)",transform:"rotate(45deg)"}}/>
-            <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.4),transparent)"}}/>
+        ))}
+
+        {/* ── LAYER 6: Bottom fade — so GLASSCORP ARENA text reads ── */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:"52%",background:"linear-gradient(0deg,rgba(8,6,18,1) 0%,rgba(8,6,18,0.85) 35%,rgba(8,6,18,0.4) 65%,transparent 100%)",pointerEvents:"none"}}/>
+
+        {/* ── LAYER 7: Vignette edges ── */}
+        <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,transparent 50%,rgba(8,6,18,0.7) 100%)",pointerEvents:"none"}}/>
+
+        {/* ── UI: TOP CORNERS ── */}
+        {/* Top left */}
+        <div style={{position:"absolute",top:16,left:"clamp(16px,3vw,40px)",zIndex:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+            <div style={{width:14,height:1,background:"rgba(200,146,42,0.6)"}}/>
+            <div style={{width:1,height:14,background:"rgba(200,146,42,0.6)",position:"absolute",left:"clamp(16px,3vw,40px)"}}/>
+          </div>
+          <div style={{fontSize:"clamp(7px,1.2vw,10px)",letterSpacing:"clamp(1.5px,0.3vw,2.5px)",color:"rgba(200,146,42,0.85)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:400}}>RARE BATCHES · REAL UPGRADES</div>
+          <div style={{width:"60%",height:1,background:"rgba(200,146,42,0.3)",marginTop:5}}/>
+        </div>
+        {/* Top right */}
+        <div style={{position:"absolute",top:16,right:"clamp(16px,3vw,40px)",zIndex:10,textAlign:"right"}}>
+          <div style={{fontSize:"clamp(7px,1.2vw,10px)",letterSpacing:"clamp(1.5px,0.3vw,2.5px)",color:"rgba(200,146,42,0.85)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:400}}>MEMBER COLLECTIVE</div>
+          <div style={{width:"60%",height:1,background:"rgba(200,146,42,0.3)",marginTop:5,marginLeft:"auto"}}/>
+          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:4,marginTop:3}}>
+            <div style={{width:14,height:1,background:"rgba(200,146,42,0.6)"}}/>
+            <div style={{width:4,height:4,border:"1px solid rgba(200,146,42,0.6)",borderRadius:"50%"}}/>
           </div>
         </div>
 
-        {/* top right */}
-        <div className="gc-corner-tr" style={{position:"absolute",top:24,right:28,zIndex:3,pointerEvents:"none",textAlign:"right"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
-            <span style={{fontSize:12,letterSpacing:"0.35em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
-              MEMBER COLLECTIVE
-            </span>
-            <div style={{width:5,height:5,background:"#c8922a",opacity:0.8,transform:"rotate(45deg)"}}/>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,justifyContent:"flex-end"}}>
-            <div style={{flex:1,height:1,background:"linear-gradient(270deg,rgba(200,146,42,0.4),transparent)"}}/>
-            <div style={{width:5,height:5,background:"none",border:"1px solid rgba(200,146,42,0.5)",transform:"rotate(45deg)"}}/>
-          </div>
-        </div>
-
-        {/* bottom left */}
-        <div style={{position:"absolute",bottom:24,left:28,zIndex:3,pointerEvents:"none"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-            <div style={{width:12,height:12,border:"1px solid rgba(200,146,42,0.4)",transform:"rotate(45deg)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{width:4,height:4,background:"rgba(200,146,42,0.5)"}}/>
-            </div>
-            <div style={{width:80,height:1,background:"linear-gradient(90deg,rgba(200,146,42,0.3),transparent)"}}/>
-          </div>
-          <span style={{fontSize:11,letterSpacing:"0.25em",color:"#bdb8c9",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",lineHeight:1.8,display:"block"}}>
-            THE EXCLUSIVE GUILD<br/>FOR THE DISCERNING COLLECTOR
-          </span>
-        </div>
-
-        {/* bottom right */}
-        <div className="gc-corner-br" style={{position:"absolute",bottom:24,right:28,zIndex:3,pointerEvents:"none",textAlign:"right"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,justifyContent:"flex-end"}}>
-            <div style={{width:80,height:1,background:"linear-gradient(270deg,rgba(200,146,42,0.3),transparent)"}}/>
-            <div style={{width:12,height:12,border:"1px solid rgba(200,146,42,0.4)",transform:"rotate(45deg)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{width:4,height:4,background:"rgba(200,146,42,0.5)"}}/>
-            </div>
-          </div>
-          <span style={{fontSize:11,letterSpacing:"0.25em",color:"#c8922a",opacity:0.8,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>
-            EST. 2024
-          </span>
-        </div>
-
-        {/* ── BUTTONS — AZRON's offering hand (left side of screen ~22%) ── */}
+        {/* ── UI: BUTTONS — left side, near AZRON offering hand ── */}
         <div style={{
           position:"absolute",
-          left:"22%",
-          top:"47%",
-          transform:"translateY(-50%)",
+          top:"50%",
+          left:"clamp(16px,5vw,80px)",
+          transform:"translateY(-20%)",
+          zIndex:10,
           display:"flex",
           flexDirection:"column",
-          gap:12,
-          zIndex:4,
+          gap:10,
         }}>
-          <button onClick={onShelf}
-            style={{padding:"11px 22px",border:"1px solid #00d4ff",background:"rgba(8,6,18,0.55)",color:"#00d4ff",cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:11,letterSpacing:"0.15em",textTransform:"uppercase",transition:"all 0.3s ease",boxShadow:"0 0 12px rgba(0,212,255,0.12)"}}
-            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 20px rgba(0,212,255,0.3)";}}
-            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 12px rgba(0,212,255,0.12)";}}>
+          {/* ENTER THE VAULT */}
+          <button onClick={onShelf} style={{
+            padding:"clamp(10px,1.5vh,14px) clamp(16px,2vw,28px)",
+            background:"transparent",
+            border:"1.5px solid #00d4ff",
+            color:"#00d4ff",
+            fontSize:"clamp(8px,1.1vw,11px)",
+            fontWeight:700,
+            letterSpacing:"clamp(1.5px,0.3vw,2.5px)",
+            textTransform:"uppercase",
+            fontFamily:"'Inter',sans-serif",
+            cursor:"pointer",
+            animation:"btnGlow 3s ease-in-out infinite",
+            minWidth:"clamp(140px,18vw,200px)",
+            textAlign:"center",
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,212,255,0.1)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
             {t.visitShelf}
           </button>
-          <button onClick={onRedeem}
-            style={{padding:"11px 22px",border:"1px solid #c8922a",background:"rgba(8,6,18,0.55)",color:"#c8922a",cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:11,letterSpacing:"0.15em",textTransform:"uppercase",transition:"all 0.3s ease",boxShadow:"0 0 12px rgba(200,146,42,0.12)"}}
-            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 0 20px rgba(200,146,42,0.3)";}}
-            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 0 12px rgba(200,146,42,0.12)";}}>
+          {/* REDEEM GMC */}
+          <button onClick={onRedeem} style={{
+            padding:"clamp(10px,1.5vh,14px) clamp(16px,2vw,28px)",
+            background:"transparent",
+            border:"1.5px solid #c8922a",
+            color:"#c8922a",
+            fontSize:"clamp(8px,1.1vw,11px)",
+            fontWeight:700,
+            letterSpacing:"clamp(1.5px,0.3vw,2.5px)",
+            textTransform:"uppercase",
+            fontFamily:"'Inter',sans-serif",
+            cursor:"pointer",
+            animation:"btnGlowGold 3s ease-in-out infinite",
+            minWidth:"clamp(140px,18vw,200px)",
+            textAlign:"center",
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(200,146,42,0.1)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
             {t.redeemGMC}
           </button>
         </div>
 
-        {/* ── GLASSCORP ARENA — frosted crystal monolith rendering ── */}
-        <style>{`
-          @keyframes gc-light-shaft{0%,100%{opacity:0.06}50%{opacity:0.12}}
-          @keyframes gc-crystal-breathe{0%,100%{opacity:0.85}50%{opacity:1}}
-          .gc-title-wrap{position:relative;display:inline-block;text-align:center;}
-          .gc-crystal-text{
-            font-family:'Bebas Neue',sans-serif;
-            font-weight:400;
-            text-transform:uppercase;
-            position:relative;
-            display:block;
-            line-height:0.92;
-          }
-          /* GLASSCORP — frosted titanium crystal */
-          .gc-glasscorp-crystal{
-            font-size:clamp(52px,9vw,122px);
-            letter-spacing:0.04em;
-            /* cloudy translucent base — NOT chrome, NOT bright white */
-            color:rgba(220,215,235,0.92);
-            /* internal grain via text-shadow stack */
-            text-shadow:
-              0 1px 2px rgba(255,255,255,0.3),
-              0 -1px 1px rgba(0,0,0,0.5),
-              0 2px 8px rgba(0,0,0,0.7),
-              inset 0 0 0 transparent;
-            /* frosted translucency filter */
-            filter:
-              drop-shadow(0 0 1px rgba(255,255,255,0.4))
-              drop-shadow(0 2px 4px rgba(0,0,0,0.8))
-              drop-shadow(0 0 20px rgba(200,180,255,0.08));
-          }
-          /* ARENA — arcane crystal glass, internal purple illumination */
-          .gc-arena-crystal{
-            font-size:clamp(50px,8.8vw,118px);
-            letter-spacing:0.08em;
-            /* crystal glass — translucent purple */
-            background:linear-gradient(
-              180deg,
-              rgba(242,233,255,0.95) 0%,
-              rgba(214,183,255,0.9) 15%,
-              rgba(165,106,255,0.85) 38%,
-              rgba(123,47,255,0.8) 62%,
-              rgba(92,30,201,0.6) 80%,
-              rgba(40,8,100,0) 100%
-            );
-            -webkit-background-clip:text;
-            -webkit-text-fill-color:transparent;
-            background-clip:text;
-            /* edge bloom — soft not harsh */
-            filter:
-              drop-shadow(0 0 6px rgba(123,47,255,0.3))
-              drop-shadow(0 0 18px rgba(123,47,255,0.18))
-              drop-shadow(0 0 40px rgba(123,47,255,0.08));
-            /* bottom dissolve into atmosphere */
-            -webkit-mask-image:linear-gradient(to bottom,
-              rgba(0,0,0,1) 0%,
-              rgba(0,0,0,1) 55%,
-              rgba(0,0,0,0.6) 75%,
-              rgba(0,0,0,0) 100%
-            );
-            mask-image:linear-gradient(to bottom,
-              rgba(0,0,0,1) 0%,
-              rgba(0,0,0,1) 55%,
-              rgba(0,0,0,0.6) 75%,
-              rgba(0,0,0,0) 100%
-            );
-          }
-        `}</style>
-        <div className="gc-hero-main" style={{
-          position:"absolute",bottom:"3%",left:0,right:0,
-          display:"flex",flexDirection:"column",alignItems:"center",
-          zIndex:4,pointerEvents:"none",
+        {/* ── UI: BOTTOM — GLASSCORP ARENA title ── */}
+        <div style={{
+          position:"absolute",
+          bottom:"clamp(16px,5vh,48px)",
+          left:0,right:0,
+          textAlign:"center",
+          zIndex:10,
+          pointerEvents:"none",
         }}>
-          <div className="gc-title-wrap">
-
-            {/* GLASSCORP — frosted titanium crystal */}
-            <div style={{position:"relative"}}>
-              {/* vertical light shaft through letters — internal illumination */}
-              <div style={{
-                position:"absolute",
-                top:0,bottom:0,
-                left:"50%",transform:"translateX(-50%)",
-                width:"60%",
-                background:"linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(200,180,255,0.04) 100%)",
-                animation:"gc-light-shaft 4s ease-in-out infinite",
-                pointerEvents:"none",
-                mixBlendMode:"overlay",
-              }}/>
-              <span className="gc-crystal-text gc-glasscorp-crystal">GLASSCORP</span>
-            </div>
-
-            {/* ARENA — arcane crystal glass */}
-            <div style={{position:"relative",marginTop:-2}}>
-              {/* large atmospheric bloom — ancient magical reactor */}
-              <div style={{
-                position:"absolute",
-                inset:"-20% -10%",
-                background:"radial-gradient(ellipse,rgba(100,40,220,0.35) 0%,rgba(80,20,180,0.15) 40%,transparent 70%)",
-                filter:"blur(24px)",
-                pointerEvents:"none",
-                zIndex:0,
-                animation:"gc-crystal-breathe 3s ease-in-out infinite",
-              }}/>
-              {/* subtle vertical energy streaks */}
-              {[20,40,60,80].map((pct,i)=>(
-                <div key={i} style={{
-                  position:"absolute",
-                  top:"10%",bottom:"20%",
-                  left:`${pct}%`,
-                  width:1,
-                  background:"linear-gradient(180deg,transparent,rgba(180,120,255,0.15),transparent)",
-                  animation:`gc-light-shaft ${3+i*0.4}s ease-in-out infinite ${i*0.6}s`,
-                  pointerEvents:"none",
-                }}/>
-              ))}
-              <span className="gc-crystal-text gc-arena-crystal" style={{position:"relative",zIndex:1}}>ARENA</span>
-            </div>
-
-            {/* gold dust particles */}
-            <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
-              {[
-                {top:"8%",left:"4%",size:2},{top:"18%",left:"12%",size:1.5},
-                {top:"5%",right:"6%",size:2},{top:"22%",right:"14%",size:1.5},
-                {top:"45%",left:"2%",size:1},{top:"55%",right:"3%",size:1.5},
-                {top:"30%",left:"8%",size:1},{top:"35%",right:"9%",size:1},
-              ].map(({top,left,right,size},i)=>(
-                <div key={i} style={{
-                  position:"absolute",top,left,right,
-                  width:size,height:size,
-                  borderRadius:"50%",
-                  background:"#c8922a",
-                  boxShadow:`0 0 ${size*3}px rgba(200,146,42,0.6)`,
-                  opacity:0.5+Math.sin(i)*0.2,
-                }}/>
-              ))}
-            </div>
-
-          </div>
+          <div style={{
+            fontFamily:"'Inter',sans-serif",
+            fontSize:"clamp(52px,11vw,148px)",
+            fontWeight:900,
+            letterSpacing:"clamp(2px,0.5vw,8px)",
+            color:"#f2f2f2",
+            lineHeight:0.88,
+            textTransform:"uppercase",
+            textShadow:"0 2px 40px rgba(8,6,18,0.9),0 0 80px rgba(8,6,18,0.6)",
+            display:"block",
+          }}>GLASSCORP</div>
+          <div style={{
+            fontFamily:"'Inter',sans-serif",
+            fontSize:"clamp(52px,11vw,148px)",
+            fontWeight:900,
+            letterSpacing:"clamp(4px,1vw,16px)",
+            lineHeight:0.88,
+            textTransform:"uppercase",
+            display:"block",
+            background:"linear-gradient(180deg,#e8d8ff 0%,#c4a0ff 30%,#9b6aff 60%,#7b2fff 85%,#5c1ec9 100%)",
+            WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",
+            backgroundClip:"text",
+            filter:"drop-shadow(0 0 30px rgba(123,47,255,0.5))",
+          }}>ARENA</div>
         </div>
 
+        {/* ── UI: BOTTOM CORNERS ── */}
+        <div style={{position:"absolute",bottom:16,left:"clamp(16px,3vw,40px)",zIndex:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+            <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="none" stroke="rgba(200,146,42,0.5)" strokeWidth="1"/><line x1="5" y1="1" x2="5" y2="9" stroke="rgba(200,146,42,0.5)" strokeWidth="0.5"/><line x1="1" y1="5" x2="9" y2="5" stroke="rgba(200,146,42,0.5)" strokeWidth="0.5"/></svg>
+            <span style={{fontSize:"clamp(6px,1vw,8px)",letterSpacing:"clamp(1px,0.25vw,2px)",color:"rgba(122,112,144,0.7)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>THE EXCLUSIVE GUILD</span>
+          </div>
+          <div style={{fontSize:"clamp(6px,1vw,8px)",letterSpacing:"clamp(1px,0.25vw,2px)",color:"rgba(122,112,144,0.5)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",paddingLeft:16}}>FOR THE DISCERNING COLLECTOR</div>
+        </div>
+        <div style={{position:"absolute",bottom:16,right:"clamp(16px,3vw,40px)",zIndex:10,textAlign:"right"}}>
+          <div style={{fontSize:"clamp(7px,1.1vw,10px)",letterSpacing:"clamp(1.5px,0.3vw,2.5px)",color:"rgba(200,146,42,0.8)",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:400}}>EST. 2024</div>
+          <div style={{width:24,height:1,background:"rgba(200,146,42,0.4)",marginTop:4,marginLeft:"auto"}}/>
+        </div>
       </section>
 
-      {/* MARQUEE — AZRON's proclamation */}
-      <div style={{overflow:"hidden",background:"linear-gradient(90deg,rgba(123,47,255,0.15),rgba(232,160,32,0.15),rgba(123,47,255,0.15))",borderTop:"1px solid rgba(232,160,32,0.2)",borderBottom:"1px solid rgba(232,160,32,0.2)",padding:"12px 0",position:"relative"}}>
-        <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,#080612 0%,transparent 10%,transparent 90%,#080612 100%)",pointerEvents:"none",zIndex:1}}/>
-        <div style={{display:"flex",animation:"marqueeAnim 32s linear infinite",whiteSpace:"nowrap"}}>
+      {/* MARQUEE */}
+      <div style={{overflow:"hidden",background:`linear-gradient(90deg,${th.a2},${th.a1})`,padding:"14px 0"}}>
+        <div style={{display:"flex",animation:"marqueeAnim 28s linear infinite",whiteSpace:"nowrap"}}>
           {[...Array(4)].map((_,i)=>(
-            <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:4,color:"rgba(200,146,42,0.8)",textTransform:"uppercase",paddingRight:60}}>
-              ⬡ AZRON'S VAULT IS OPEN &nbsp;·&nbsp; GMC MEMBERS ONLY &nbsp;·&nbsp; RARE BATCHES INSIDE &nbsp;·&nbsp; GLASSCORP ARENA &nbsp;·&nbsp; ENTER THE REALM &nbsp;·&nbsp;
+            <span key={i} style={{fontSize:10,fontWeight:700,letterSpacing:3,color:"#000",textTransform:"uppercase",paddingRight:60}}>
+              THE VAULT IS OPEN &nbsp;·&nbsp; GMC MEMBERS ONLY &nbsp;·&nbsp; RARE BATCHES AVAILABLE &nbsp;·&nbsp; GLASSCORP COLLECTIVE &nbsp;·&nbsp; CLAIM YOUR DROP &nbsp;·&nbsp;
             </span>
           ))}
         </div>
       </div>
 
-      {/* FEATURED BATCHES */}
-      <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 180px",
-        background:"transparent"}}>
-        {/* CONTENT */}
-        <div style={{position:"relative",zIndex:2,maxWidth:1400,margin:"0 auto"}}>
-          {/* section header */}
-          <div style={{textAlign:"center",marginBottom:80}}>
-            <div style={{color:"#c8922a",letterSpacing:"0.4em",fontSize:12,marginBottom:18,opacity:0.75}}>◆ OUTER CHAMBER ◆</div>
-            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#e8c98a",fontSize:"clamp(42px,7vw,88px)",lineHeight:1,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase"}}>
-              FEATURED BATCHES
-            </h2>
-            <p style={{marginTop:20,color:"#b7aacd",letterSpacing:"0.22em",fontSize:13,opacity:0.7}}>HAND SELECTED · SPIRIT APPROVED</p>
-          </div>
-          {/* card grid */}
-          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:24}}>
-            <GBtn onClick={onShelf} color={th.border} outline>{t.visitShelf} →</GBtn>
-          </div>
+      {/* FEATURED */}
+      <section style={{padding:"100px 5vw",background:th.bg}}>
+        <div style={{fontSize:10,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.a1}`}}>— New Arrivals</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:48,flexWrap:"wrap",gap:16}}>
+          <h2 style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(32px,6vw,72px)",fontWeight:900,letterSpacing:"-0.02em",color:th.text,margin:0,textTransform:"uppercase",lineHeight:0.9}}>
+            Featured<br/><span style={{color:th.a2,textShadow:`0 0 20px ${th.a2}`}}>Batches</span>
+          </h2>
+          <GBtn onClick={onShelf} color={th.border} outline>{t.visitShelf} →</GBtn>
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:3}}>
           {featuredStrains.map(s=>(
             <StrainCard key={s.id} strain={s} t={t}
@@ -1921,79 +1328,14 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
             />
           )}
         </div>
-        </div>{/* end content */}
-        {/* bottom bleed into vault */}
-        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:260,background:"linear-gradient(180deg,rgba(6,4,14,0),#06040e)",pointerEvents:"none",zIndex:2}}/>
       </section>
 
-      {/* THE VAULT — AZRON's sacred cave entrance with real images */}
-      <style>{`
-        @keyframes floatCrystal{0%,100%{transform:translateY(0px)}50%{transform:translateY(-20px)}}
-        @keyframes floatCrystal2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-15px)}}
-        @keyframes floatCrystal3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-18px)}}
-        @media(max-width:900px){.vault-grid{grid-template-columns:1fr!important;gap:40px!important;}}
-      `}</style>
-      <section style={{position:"relative",width:"100%",overflow:"hidden",padding:"140px 5vw 160px",background:"transparent"}}>
-        {/* CONTENT */}
-        <div className="vault-grid" style={{position:"relative",zIndex:2,maxWidth:1400,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"clamp(40px,6vw,80px)",alignItems:"center"}}>
+      {/* THE GARDEN */}
+      <GardenSection t={t} onRedeem={onRedeem} onShelf={onShelf} strains={allStrains}/>
 
-          {/* LEFT — title + crystals + button */}
-          <div style={{position:"relative",zIndex:2}}>
-            <div style={{color:"#c8922a",letterSpacing:"0.35em",fontSize:12,marginBottom:18,opacity:0.7}}>◆ AZRON'S SACRED VAULT ◆</div>
-            <h2 style={{fontFamily:"'Inter',sans-serif",color:"#e8c98a",fontSize:"clamp(52px,8vw,120px)",lineHeight:0.95,margin:0,letterSpacing:"0.06em",fontWeight:900,textTransform:"uppercase",textShadow:"0 0 40px rgba(232,160,32,0.15)"}}>
-              THE VAULT
-            </h2>
-            <p style={{marginTop:28,color:"#b7aacd",fontSize:15,lineHeight:1.8,maxWidth:480,opacity:0.82}}>
-              Beyond this threshold lies AZRON's hidden treasury — sacred relics suspended inside ancient divine circuitry.
-            </p>
-
-            {/* 3 SVG crystals with labels */}
-            <div style={{display:"flex",gap:32,marginTop:44,alignItems:"flex-end"}}>
-              {[
-                {label:"EXOTIC",color:"#c8922a",glow:"rgba(200,146,42,0.5)",delay:"0s"},
-                {label:"PREMIUM",color:"#7b2fff",glow:"rgba(123,47,255,0.5)",delay:"1.2s"},
-                {label:"TOP",color:"#00d4ff",glow:"rgba(0,212,255,0.5)",delay:"0.6s"},
-              ].map(({label,color,glow,delay})=>(
-                <div key={label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-                  <div style={{animation:`floatCrystal 6s ease-in-out infinite`,animationDelay:delay,filter:`drop-shadow(0 0 14px ${glow})`}}>
-                    <svg viewBox="0 0 60 90" width="60" height="90">
-                      {/* crystal facets */}
-                      <polygon points="30,5 50,35 30,85 10,35" fill={color} opacity="0.85"/>
-                      <polygon points="30,5 50,35 30,50 10,35" fill={color} opacity="0.4"/>
-                      <polygon points="30,5 50,35 30,35" fill="rgba(255,255,255,0.15)" opacity="0.6"/>
-                      {/* inner glow line */}
-                      <line x1="30" y1="12" x2="30" y2="78" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
-                      {/* glow pool */}
-                      <ellipse cx="30" cy="86" rx="18" ry="4" fill={color} opacity="0.25"/>
-                    </svg>
-                  </div>
-                  <span style={{fontSize:8,letterSpacing:3,color,textTransform:"uppercase",opacity:0.8}}>{label}</span>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={onShelf}
-              style={{marginTop:40,padding:"16px 32px",border:"1px solid rgba(200,146,42,0.5)",background:"rgba(6,4,14,0.8)",color:"#e8c98a",letterSpacing:"0.18em",fontSize:12,cursor:"pointer",fontFamily:"'Inter',sans-serif",fontWeight:700,textTransform:"uppercase",transition:"transform 0.3s ease,border-color 0.3s ease"}}
-              onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.03)";e.currentTarget.style.borderColor="rgba(232,160,32,0.9)";}}
-              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.borderColor="rgba(200,146,42,0.5)";}}>
-              ◆ ENTER THE VAULT ◆
-            </button>
-          </div>
-
-          {/* RIGHT — empty, vault bg image fills this side */}
-          <div style={{position:"relative",minHeight:"clamp(300px,50vw,600px)"}}/>
-        </div>
-        {/* bottom bleed into GMC */}
-        <div style={{position:"absolute",bottom:0,left:0,width:"100%",height:200,background:"linear-gradient(180deg,transparent,#080612)",pointerEvents:"none",zIndex:2}}/>
-      </section>
-
-      {/* GMC INFO — AZRON's treasury */}
-      <section style={{padding:"100px 5vw",position:"relative",overflow:"hidden",
-        background:"transparent"}}>
-        {/* gold vein divider at top — only decoration kept */}
-        <div style={{position:"absolute",top:0,left:"5vw",right:"5vw",height:1,
-          background:"linear-gradient(90deg,transparent,rgba(200,146,42,0.4),rgba(123,47,255,0.3),rgba(200,146,42,0.4),transparent)",
-          pointerEvents:"none"}}/>
+      {/* GMC INFO */}
+      <section style={{padding:"100px 5vw",background:th.bgDeep,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"80vw",height:"60vw",borderRadius:"50%",background:`radial-gradient(circle,${th.a2}06 0%,transparent 60%)`,pointerEvents:"none"}}/>
         <div style={{position:"relative",zIndex:1,display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,380px),1fr))",gap:"6vw",alignItems:"center"}}>
           <div>
             <div style={{fontSize:10,letterSpacing:5,color:th.amber,textTransform:"uppercase",marginBottom:14,textShadow:`0 0 8px ${th.amber}`}}>— The Token</div>
@@ -2047,8 +1389,8 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           <div style={{background:th.bgCard,border:`1px solid ${th.amber}40`,padding:"56px 36px",textAlign:"center",boxShadow:`0 0 40px ${th.amber}10`,position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"150%",height:"150%",borderRadius:"50%",background:`radial-gradient(circle,${th.amber}08 0%,transparent 60%)`,pointerEvents:"none"}}/>
             <div style={{position:"relative",zIndex:1}}>
-              <GMCCoin size={80} theme={{amber:"#c8922a"}}/>
-              <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(48px,8vw,80px)",fontWeight:900,color:"#c8922a",lineHeight:0.9,letterSpacing:"-0.04em",textShadow:"0 0 40px rgba(232,160,32,0.8)",marginTop:20}}>GMC</div>
+              <GMCCoin size={80} theme={{amber:"#e8a020"}}/>
+              <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(48px,8vw,80px)",fontWeight:900,color:"#e8a020",lineHeight:0.9,letterSpacing:"-0.04em",textShadow:"0 0 40px rgba(232,160,32,0.8)",marginTop:20}}>GMC</div>
               <div style={{fontSize:11,letterSpacing:4,color:th.dim,textTransform:"uppercase",marginTop:12}}>Glasscorp Member Credit</div>
               <div style={{width:"100%",height:1,background:`linear-gradient(90deg,transparent,${th.amber},transparent)`,margin:"20px 0"}}/>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -2119,7 +1461,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
             <span style={{fontSize:9,color:th.dim,letterSpacing:1}}>© Glasscorp Arena</span>
-            <span style={{background:"#c8922a",color:"#000",fontWeight:900,fontSize:9,padding:"2px 8px",letterSpacing:2}}>21+</span>
+            <span style={{background:"#e8a020",color:"#000",fontWeight:900,fontSize:9,padding:"2px 8px",letterSpacing:2}}>21+</span>
           </div>
         </div>
       </footer>
@@ -2130,7 +1472,11 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
 // ── PROFILE ──
 function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,onUpdateProfile,transactions,onAddToCart,strains,onOpenCart,orders}){
   const th=T.base;
-  // auth state managed below in auth screens
+  const [name,setName]=useState("");
+  const [contact,setContact]=useState("whatsapp");
+  const [phone,setPhone]=useState("");
+  const [lineId,setLineId]=useState("");
+  const [granted,setGranted]=useState(false);
 
   // Delivery profile state
   const [editingDelivery,setEditingDelivery]=useState(false);
@@ -2154,263 +1500,121 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
     setTimeout(()=>setDeliverySaved(false),2500);
   }
 
-
-
-  // ── AUTH SCREENS ──
-  const [authScreen,setAuthScreen]=useState("login"); // login | signup | forgot | personame
-  const [authEmail,setAuthEmail]=useState("");
-  const [authPassword,setAuthPassword]=useState("");
-  const [authConfirm,setAuthConfirm]=useState("");
-  const [authPersoname,setAuthPersoname]=useState("");
-  const [authLoading,setAuthLoading]=useState(false);
-  const [authError,setAuthError]=useState("");
-  const [authSuccess,setAuthSuccess]=useState("");
-  const [authGoogleUser,setAuthGoogleUser]=useState(null); // temp hold google user while picking personame
-  const [personameStatus,setPersonameStatus]=useState(""); // "" | "checking" | "available" | "taken"
-  const personameTimer=useRef(null);
-
-  function checkPersoname(val){
-    setPersonameStatus("");
-    if(personameTimer.current) clearTimeout(personameTimer.current);
-    if(!val||val.trim().length<2){ setPersonameStatus(""); return; }
-    setPersonameStatus("checking");
-    personameTimer.current=setTimeout(async()=>{
-      const unique=await sbCheckPersonameUnique(val.trim());
-      setPersonameStatus(unique?"available":"taken");
-    },600);
+  function handleSubmit(){
+    const contactVal=contact==="whatsapp"?phone.trim():lineId.trim();
+    if(!name.trim()||!contactVal) return;
+    setGranted(true);
+    setTimeout(()=>{
+      onLogin({name:name.trim(),contact,phone:phone.trim(),lineId:lineId.trim(),gmcBalance:0,totalSpent:0});
+    },2000);
   }
 
-  async function handleLogin(){
-    if(!authPersoname.trim()||!authPassword.trim()) return;
-    setAuthLoading(true); setAuthError(""); setAuthSuccess("");
-    // Convert personame to internal email
-    const fakeEmail=authPersoname.trim().toLowerCase().replace(/[^a-z0-9]/g,"_")+"@glasscorp.gg";
-    const {data,error}=await sbSignIn(fakeEmail,authPassword.trim());
-    if(error){ setAuthError("Wrong codename or password. Try again."); setAuthLoading(false); return; }
-    const token=data.access_token;
-    localStorage.setItem("glasscorp_session",token);
-    const authId=data.user?.id;
-    const member=await sbGetMemberByAuthId(authId);
-    if(member){
-      onLogin(member);
-    } else {
-      setAuthError("Account not found. Please sign up.");
-    }
-    setAuthLoading(false);
-  }
-
-  async function handleSignup(){
-    if(!authPassword.trim()||!authPersoname.trim()) return;
-    if(authPassword!==authConfirm){ setAuthError("Passwords do not match."); return; }
-    if(authPassword.length<6){ setAuthError("Password must be at least 6 characters."); return; }
-    if(authPersoname.trim().length<2){ setAuthError("Personame must be at least 2 characters."); return; }
-    setAuthLoading(true); setAuthError(""); setAuthSuccess("");
-    // Check personame unique
-    const unique=await sbCheckPersonameUnique(authPersoname.trim());
-    if(!unique){ setAuthError("That Personame is already taken. Choose another."); setAuthLoading(false); return; }
-    // Build internal fake email from personame for Supabase Auth
-    const fakeEmail=authPersoname.trim().toLowerCase().replace(/[^a-z0-9]/g,"_")+"@glasscorp.gg";
-    // Create auth account with fake email
-    const {data,error}=await sbSignUp(fakeEmail,authPassword.trim());
-    if(error){ setAuthError(error); setAuthLoading(false); return; }
-    const authId=data.user?.id||data.id;
-    if(!authId){ setAuthError("Signup failed. Please try again."); setAuthLoading(false); return; }
-    // Store real email (if provided) in members table for recovery + Google linking
-    const realEmail=authEmail.trim()||fakeEmail;
-    const saved=await sbCreateMember(authId,realEmail,authPersoname.trim());
-    if(saved){
-      const token=data.session?.access_token||data.access_token||"";
-      if(token) localStorage.setItem("glasscorp_session",token);
-      // Auto-login if session returned, otherwise prompt
-      if(token){
-        onLogin(dbToMember(saved));
-      } else {
-        setAuthSuccess("Welcome to The Arena! You can now log in with your Personame.");
-        setAuthScreen("login");
-      }
-    } else {
-      setAuthError("Signup failed. Please try again.");
-    }
-    setAuthLoading(false);
-  }
-
-  async function handleForgot(){
-    if(!authPersoname.trim()) return;
-    setAuthLoading(true); setAuthError(""); setAuthSuccess("");
-    // Look up member by personame to get their real email
-    const rows=await sbGet("members","personame=eq."+encodeURIComponent(authPersoname.trim())+"&select=email");
-    if(!rows||rows.length===0){
-      setAuthError("Personame not found. Check your codename.");
-      setAuthLoading(false); return;
-    }
-    const email=rows[0].email||"";
-    if(!email||email.endsWith("@glasscorp.gg")){
-      setAuthError("No recovery email on file. Please contact support.");
-      setAuthLoading(false); return;
-    }
-    const ok=await sbForgotPassword(email);
-    setAuthLoading(false);
-    if(ok){ setAuthSuccess("Reset link sent to your email!"); }
-    else { setAuthError("Failed to send reset email. Try again."); }
-  }
-
-  // Check for pending Google user (new Google signup needs personame)
-  useEffect(()=>{
-    const pending=localStorage.getItem("glasscorp_google_pending");
-    if(pending){
-      try{
-        const gUser=JSON.parse(pending);
-        setAuthGoogleUser(gUser);
-        setAuthScreen("personame");
-        localStorage.removeItem("glasscorp_google_pending");
-      }catch(_){}
-    }
-  },[]);
-
-  async function handlePersonameSubmit(){
-    if(!authPersoname.trim()||!authGoogleUser) return;
-    setAuthLoading(true); setAuthError("");
-    const unique=await sbCheckPersonameUnique(authPersoname.trim());
-    if(!unique){ setAuthError("That Personame is taken. Choose another."); setAuthLoading(false); return; }
-    const saved=await sbCreateMember(
-      authGoogleUser.id, authGoogleUser.email,
-      authPersoname.trim(), authGoogleUser.user_metadata?.avatar_url||""
-    );
-    if(saved){
-      onLogin(dbToMember(saved));
-    } else {
-      setAuthError("Failed to create profile. Please try again.");
-    }
-    setAuthLoading(false);
-  }
-
-  const inputStyle={width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.04)",border:`1px solid ${th.border}`,color:th.text,padding:"14px 16px",fontSize:14,fontFamily:"'Inter',sans-serif",outline:"none",transition:"border 0.2s",marginBottom:12};
+  const contactOk = contact==="whatsapp"?phone.trim().length>0:lineId.trim().length>0;
+  const formOk = name.trim().length>0 && contactOk;
 
   if(!user) return(
-    <div style={{minHeight:"100vh",background:th.bgDeep,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 20px 120px",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:th.bgDeep,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 24px 120px",position:"relative",overflow:"hidden"}}>
       <style>{`
         @keyframes accessScan{0%{transform:translateY(-100%)}100%{transform:translateY(200vh)}}
-        .gc-input:focus{border-color:#00d4ff!important;outline:none!important;}
-        .gc-input::placeholder{color:#7a7090!important;}
-        .gc-btn:hover{opacity:0.85!important;}
+        @keyframes grantPulse{0%,100%{opacity:0.7;transform:scale(1)}50%{opacity:1;transform:scale(1.02)}}
+        .profile-input:focus{border-color:#00d4ff!important;box-shadow:0 0 0 1px #00d4ff40!important;outline:none!important;}
+        .profile-input::placeholder{color:#7a7090!important;}
       `}</style>
-      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px)",backgroundSize:"44px 44px",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(0,212,255,0.08),transparent)",animation:"accessScan 10s linear infinite",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:"60vw",height:"60vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.05) 0%,transparent 65%)",pointerEvents:"none"}}/>
 
-      <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
+      {/* Background grid */}
+      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px)",backgroundSize:"44px 44px",pointerEvents:"none"}}/>
+      {/* Scanline */}
+      <div style={{position:"absolute",left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(0,212,255,0.1),transparent)",animation:"accessScan 10s linear infinite",pointerEvents:"none"}}/>
+      {/* Corner accents */}
+      {[[true,false,true,false],[true,false,false,true],[false,true,true,false],[false,true,false,true]].map(([bt,bb,bl,br],i)=>(
+        <div key={i} style={{position:"absolute",top:i<2?20:"auto",bottom:i>=2?20:"auto",left:i%2===0?20:"auto",right:i%2===1?20:"auto",width:16,height:16,borderTop:bt?"1px solid rgba(0,212,255,0.3)":"none",borderBottom:bb?"1px solid rgba(0,212,255,0.3)":"none",borderLeft:bl?"1px solid rgba(0,212,255,0.3)":"none",borderRight:br?"1px solid rgba(0,212,255,0.3)":"none",pointerEvents:"none"}}/>
+      ))}
+      <div style={{position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:"60vw",height:"60vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(123,47,255,0.06) 0%,transparent 65%)",pointerEvents:"none"}}/>
 
-        {/* Logo / Brand */}
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{fontSize:9,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:10,textShadow:`0 0 8px ${th.a1}`}}>◆ Glasscorp Arena ◆</div>
-          <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(26px,5vw,36px)",fontWeight:900,color:th.text,textTransform:"uppercase",letterSpacing:"-0.02em",lineHeight:0.95,marginBottom:8}}>
-            {authScreen==="login"&&<>Enter The<br/><span style={{color:th.a1,textShadow:`0 0 16px ${th.a1}`}}>Arena</span></>}
-            {authScreen==="signup"&&<>Join The<br/><span style={{color:th.a2,textShadow:`0 0 16px ${th.a2}`}}>Arena</span></>}
-            {authScreen==="forgot"&&<>Reset<br/><span style={{color:th.amber,textShadow:`0 0 16px ${th.amber}`}}>Access</span></>}
-            {authScreen==="personame"&&<>Choose Your<br/><span style={{color:th.a1,textShadow:`0 0 16px ${th.a1}`}}>Codename</span></>}
+      <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:420}}>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{fontSize:9,letterSpacing:5,color:th.a1,textTransform:"uppercase",marginBottom:12,textShadow:`0 0 8px ${th.a1}`}}>◆ Glasscorp · Secure Access ◆</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(28px,6vw,42px)",fontWeight:900,color:th.text,textTransform:"uppercase",letterSpacing:"-0.02em",lineHeight:0.95,marginBottom:10}}>
+            {granted?"ACCESS":"REQUEST"}
+            <br/>
+            <span style={{color:th.a1,textShadow:`0 0 20px ${th.a1}`}}>{granted?"GRANTED":"CLEARANCE"}</span>
           </div>
-          <div style={{fontSize:11,color:th.dim,lineHeight:1.6}}>
-            {authScreen==="login"&&"Enter your credentials to access The Vault"}
-            {authScreen==="signup"&&"Create your Glasscorp identity"}
-            {authScreen==="forgot"&&"We'll send a reset link to your email"}
-            {authScreen==="personame"&&"Pick a unique codename for The Arena"}
-          </div>
+          <p style={{fontSize:12,color:th.dim,lineHeight:1.7,maxWidth:320,margin:"0 auto"}}>
+            {granted?"Identity confirmed. Initializing vault access...":"Assign your personame and secure channel to request access."}
+          </p>
         </div>
 
-        {/* Card */}
-        <div style={{background:`${th.bgCard}f0`,border:`1px solid ${th.border}`,padding:"28px",backdropFilter:"blur(20px)",boxShadow:"0 0 60px rgba(123,47,255,0.06)",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:authScreen==="login"?`linear-gradient(90deg,transparent,${th.a1},transparent)`:authScreen==="signup"?`linear-gradient(90deg,transparent,${th.a2},transparent)`:`linear-gradient(90deg,transparent,${th.amber},transparent)`}}/>
+        {/* Single form card — all fields visible */}
+        {!granted?(
+          <div style={{background:`${th.bgCard}f2`,border:`1px solid ${th.border}`,padding:"28px",backdropFilter:"blur(20px)",boxShadow:"0 0 60px rgba(123,47,255,0.08)",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${th.a1}40,transparent)`}}/>
 
-          {/* Error / Success */}
-          {authError&&<div style={{padding:"10px 14px",background:"rgba(232,80,32,0.1)",border:"1px solid rgba(232,80,32,0.3)",color:"#e85020",fontSize:11,marginBottom:14,letterSpacing:0.5}}>{authError}</div>}
-          {authSuccess&&<div style={{padding:"10px 14px",background:"rgba(0,255,136,0.08)",border:"1px solid rgba(0,255,136,0.25)",color:"#00ff88",fontSize:11,marginBottom:14,letterSpacing:0.5}}>{authSuccess}</div>}
+            {/* Codename */}
+            <div style={{fontSize:8,letterSpacing:3,color:th.a1,textTransform:"uppercase",marginBottom:8}}>Personame</div>
+            <input
+              className="profile-input"
+              placeholder="Enter your personame..."
+              value={name}
+              onChange={e=>setName(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&formOk&&handleSubmit()}
+              autoFocus
+              style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.03)",border:`1px solid ${name.trim()?th.a1:th.border}`,color:th.text,padding:"15px 16px",fontSize:15,fontFamily:"'Inter',sans-serif",fontWeight:700,letterSpacing:1,transition:"all 0.2s",marginBottom:20}}
+            />
 
-          {/* ── LOGIN SCREEN ── */}
-          {authScreen==="login"&&(<>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
-            <input className="gc-input" type="text" placeholder="Your PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} autoFocus style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a1} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Password</div>
-            <input className="gc-input" type="password" placeholder="••••••••" value={authPassword} onChange={e=>{setAuthPassword(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={{...inputStyle,marginBottom:6}} onFocus={e=>e.target.style.borderColor=th.a1} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <div style={{textAlign:"right",marginBottom:20}}>
-              <button onClick={()=>{setAuthScreen("forgot");setAuthError("");setAuthSuccess("");}} style={{background:"none",border:"none",color:th.dim,cursor:"pointer",fontSize:10,letterSpacing:1,fontFamily:"'Inter',sans-serif",textDecoration:"underline",opacity:0.7}}>Forgot password?</button>
+            {/* Secure channel */}
+            <div style={{fontSize:8,letterSpacing:3,color:th.a1,textTransform:"uppercase",marginBottom:8}}>Secure Channel</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
+              {[
+                {id:"whatsapp",label:"WhatsApp",icon:"💚",color:"#25d366"},
+                {id:"line",label:"LINE",icon:"💬",color:"#06c755"},
+              ].map(ch=>(
+                <button key={ch.id} onClick={()=>setContact(ch.id)}
+                  style={{padding:"11px",background:contact===ch.id?`${ch.color}15`:"rgba(255,255,255,0.02)",border:`1px solid ${contact===ch.id?ch.color:"rgba(255,255,255,0.08)"}`,color:contact===ch.id?ch.color:th.dim,cursor:"pointer",fontSize:11,letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:contact===ch.id?`0 0 12px ${ch.color}25`:"none"}}>
+                  <span>{ch.icon}</span>{ch.label}
+                </button>
+              ))}
             </div>
-            <button className="gc-btn" onClick={handleLogin} disabled={authLoading||!authPersoname||!authPassword} style={{width:"100%",padding:"15px",background:th.a1,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:10,opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
-              {authLoading?"CONNECTING...":"◆ Enter The Arena"}
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-              <div style={{flex:1,height:1,background:th.border}}/>
-              <span style={{fontSize:9,color:th.dim,letterSpacing:2,textTransform:"uppercase"}}>or</span>
-              <div style={{flex:1,height:1,background:th.border}}/>
-            </div>
-            <button className="gc-btn" onClick={sbSignInWithGoogle} style={{width:"100%",padding:"13px",background:"rgba(255,255,255,0.05)",border:`1px solid ${th.border}`,color:th.text,cursor:"pointer",fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"opacity 0.2s"}}>
-              <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-              Continue with Google
-            </button>
-            <div style={{textAlign:"center",borderTop:`1px solid ${th.border}`,paddingTop:16}}>
-              <span style={{fontSize:11,color:th.dim}}>Not a member? </span>
-              <button onClick={()=>{setAuthScreen("signup");setAuthError("");setAuthSuccess("");setAuthPersoname("");setAuthPassword("");setAuthConfirm("");}} style={{background:"none",border:"none",color:th.a1,cursor:"pointer",fontSize:11,fontFamily:"'Inter',sans-serif",fontWeight:700,textDecoration:"underline"}}>Sign Up</button>
-            </div>
-          </>)}
+            {contact==="whatsapp"?(
+              <input
+                className="profile-input"
+                placeholder="Your WhatsApp number..."
+                value={phone}
+                onChange={e=>setPhone(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&formOk&&handleSubmit()}
+                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.03)",border:`1px solid ${phone.trim()?th.a1:th.border}`,color:th.text,padding:"15px 16px",fontSize:14,fontFamily:"'Inter',sans-serif",transition:"all 0.2s",marginBottom:20}}
+              />
+            ):(
+              <input
+                className="profile-input"
+                placeholder="Your LINE ID..."
+                value={lineId}
+                onChange={e=>setLineId(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&formOk&&handleSubmit()}
+                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.03)",border:`1px solid ${lineId.trim()?th.a1:th.border}`,color:th.text,padding:"15px 16px",fontSize:14,fontFamily:"'Inter',sans-serif",transition:"all 0.2s",marginBottom:20}}
+              />
+            )}
 
-          {/* ── SIGNUP SCREEN ── */}
-          {authScreen==="signup"&&(<>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
-            <input className="gc-input" type="text" placeholder="Pick a unique PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");checkPersoname(e.target.value);}} autoFocus style={{...inputStyle,marginBottom:4,borderColor:personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}} onFocus={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.a2} onBlur={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}/>
-            {personameStatus==="checking"&&<div style={{fontSize:9,color:th.dim,marginBottom:10,letterSpacing:1}}>⟳ Checking availability...</div>}
-            {personameStatus==="available"&&<div style={{fontSize:9,color:"#00ff88",marginBottom:10,letterSpacing:1}}>✓ Available</div>}
-            {personameStatus==="taken"&&<div style={{fontSize:9,color:"#e85020",marginBottom:10,letterSpacing:1}}>✗ Already taken — choose another</div>}
-            {personameStatus===""&&<div style={{marginBottom:10}}/>}
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Email <span style={{color:th.dim,fontWeight:400,letterSpacing:1,textTransform:"none",fontSize:9}}>(for recovery + Google login)</span></div>
-            <input className="gc-input" type="email" placeholder="your@email.com" value={authEmail} onChange={e=>{setAuthEmail(e.target.value);setAuthError("");}} style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Password</div>
-            <input className="gc-input" type="password" placeholder="Min 6 characters" value={authPassword} onChange={e=>{setAuthPassword(e.target.value);setAuthError("");}} style={{...inputStyle}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Confirm Password</div>
-            <input className="gc-input" type="password" placeholder="Repeat password" value={authConfirm} onChange={e=>{setAuthConfirm(e.target.value);setAuthError("");}} style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.a2} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <button className="gc-btn" onClick={handleSignup} disabled={authLoading||!authEmail||!authPassword||!authPersoname||!authConfirm||personameStatus==="taken"||personameStatus==="checking"} style={{width:"100%",padding:"15px",background:th.a2,border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:10,opacity:authLoading||personameStatus==="taken"||personameStatus==="checking"?0.4:1,transition:"opacity 0.2s"}}>
-              {authLoading?"CREATING...":"◆ Join The Arena"}
+            {/* Submit */}
+            <button
+              onClick={handleSubmit}
+              disabled={!formOk}
+              style={{width:"100%",padding:"16px",background:formOk?`linear-gradient(90deg,${th.a1}20,${th.a2}20,${th.a1}20)`:"rgba(255,255,255,0.03)",border:`1px solid ${formOk?th.a1:th.border}`,color:formOk?th.a1:th.dim,cursor:formOk?"pointer":"not-allowed",fontSize:11,fontWeight:900,letterSpacing:4,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",boxShadow:formOk?`0 0 20px ${th.a1}20`:"none",transition:"all 0.3s"}}>
+              ◆ Request Vault Access ◆
             </button>
-            {/* Google */}
-            <button className="gc-btn" onClick={sbSignInWithGoogle} style={{width:"100%",padding:"13px",background:"rgba(255,255,255,0.05)",border:`1px solid ${th.border}`,color:th.text,cursor:"pointer",fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"opacity 0.2s"}}>
-              <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-              Continue with Google
-            </button>
-            <div style={{textAlign:"center",borderTop:`1px solid ${th.border}`,paddingTop:16,display:"flex",justifyContent:"center",gap:16}}>
-              <button onClick={()=>{setAuthScreen("login");setAuthError("");setAuthSuccess("");setAuthPersoname("");setAuthPassword("");setAuthConfirm("");}} style={{background:"none",border:"none",color:th.a1,cursor:"pointer",fontSize:11,fontFamily:"'Inter',sans-serif",fontWeight:700,textDecoration:"underline"}}>← Back to Login</button>
-            </div>
-          </>)}
+          </div>
+        ):(
+          <div style={{padding:"28px",background:"rgba(0,255,136,0.06)",border:"1px solid rgba(0,255,136,0.25)",textAlign:"center",animation:"grantPulse 1.5s ease-in-out infinite"}}>
+            <div style={{fontSize:28,marginBottom:10}}>✓</div>
+            <div style={{fontSize:11,letterSpacing:3,color:"#00ff88",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",fontWeight:700}}>Identity Confirmed · Access Granted</div>
+            <div style={{fontSize:9,color:"rgba(0,255,136,0.6)",marginTop:6,letterSpacing:1}}>Initializing your vault...</div>
+          </div>
+        )}
 
-          {/* ── FORGOT PASSWORD ── */}
-          {authScreen==="forgot"&&(<>
-            <div style={{fontSize:11,color:th.dim,marginBottom:14,lineHeight:1.6}}>Enter your Personame and we'll send a reset link to your registered email.</div>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
-            <input className="gc-input" type="text" placeholder="Your PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");}} onKeyDown={e=>e.key==="Enter"&&handleForgot()} autoFocus style={{...inputStyle,marginBottom:20}} onFocus={e=>e.target.style.borderColor=th.amber} onBlur={e=>e.target.style.borderColor=th.border}/>
-            <button className="gc-btn" onClick={handleForgot} disabled={authLoading||!authPersoname.trim()} style={{width:"100%",padding:"15px",background:th.amber,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:18,opacity:authLoading?0.6:1,transition:"opacity 0.2s"}}>
-              {authLoading?"SENDING...":"Send Reset Link"}
-            </button>
-            <div style={{textAlign:"center",borderTop:`1px solid ${th.border}`,paddingTop:16}}>
-              <button onClick={()=>{setAuthScreen("login");setAuthError("");setAuthSuccess("");}} style={{background:"none",border:"none",color:th.a1,cursor:"pointer",fontSize:11,fontFamily:"'Inter',sans-serif",fontWeight:700,textDecoration:"underline"}}>← Back to Login</button>
-            </div>
-          </>)}
-
-          {/* ── PERSONAME PICKER (Google new users) ── */}
-          {authScreen==="personame"&&(<>
-            <div style={{fontSize:11,color:th.dim,marginBottom:16,lineHeight:1.6}}>Welcome! You're signing in with Google for the first time. Choose a unique PERSONA name for The Arena.</div>
-            <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Personame</div>
-            <input className="gc-input" type="text" placeholder="Pick a unique PERSONA name..." value={authPersoname} onChange={e=>{setAuthPersoname(e.target.value);setAuthError("");checkPersoname(e.target.value);}} onKeyDown={e=>e.key==="Enter"&&handlePersonameSubmit()} autoFocus style={{...inputStyle,marginBottom:4,borderColor:personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}} onFocus={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.a1} onBlur={e=>e.target.style.borderColor=personameStatus==="available"?"#00ff88":personameStatus==="taken"?"#e85020":th.border}/>
-            {personameStatus==="checking"&&<div style={{fontSize:9,color:th.dim,marginBottom:12,letterSpacing:1}}>⟳ Checking availability...</div>}
-            {personameStatus==="available"&&<div style={{fontSize:9,color:"#00ff88",marginBottom:12,letterSpacing:1}}>✓ Available</div>}
-            {personameStatus==="taken"&&<div style={{fontSize:9,color:"#e85020",marginBottom:12,letterSpacing:1}}>✗ Already taken — choose another</div>}
-            {personameStatus===""&&<div style={{marginBottom:12}}/>}
-            <button className="gc-btn" onClick={handlePersonameSubmit} disabled={authLoading||!authPersoname.trim()||personameStatus==="taken"||personameStatus==="checking"} style={{width:"100%",padding:"15px",background:th.a1,border:"none",color:th.bgDeep,cursor:"pointer",fontSize:11,fontWeight:900,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:authLoading||personameStatus==="taken"||personameStatus==="checking"?0.4:1,transition:"opacity 0.2s"}}>
-              {authLoading?"SAVING...":"◆ Confirm Codename"}
-            </button>
-          </>)}
-
-        </div>
-
-        {/* Guest */}
-        {(authScreen==="login"||authScreen==="signup")&&(
-          <button onClick={onSkip} style={{width:"100%",marginTop:10,padding:"12px",background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:10,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:0.5}}>
+        {/* Skip */}
+        {!granted&&(
+          <button onClick={onSkip} style={{width:"100%",marginTop:12,padding:"12px",background:"transparent",border:"none",color:th.dim,cursor:"pointer",fontSize:10,letterSpacing:3,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",opacity:0.6}}>
             Browse as guest →
           </button>
         )}
@@ -2497,12 +1701,12 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
 
           {/* GMC Balance — hero number */}
           <div style={{background:"rgba(0,0,0,0.35)",border:`1px solid rgba(232,160,32,0.2)`,padding:"20px 24px",marginBottom:20,position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(200,146,42,0.4),transparent)"}}/>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:"linear-gradient(90deg,transparent,rgba(232,160,32,0.4),transparent)"}}/>
             <div style={{fontSize:8,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginBottom:8}}>GMC Balance</div>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <GMCCoin size={40} theme={{amber:"#c8922a"}}/>
+              <GMCCoin size={40} theme={{amber:"#e8a020"}}/>
               <div>
-                <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(36px,7vw,52px)",fontWeight:900,color:"#c8922a",lineHeight:0.9,textShadow:"0 0 30px rgba(200,146,42,0.6)",letterSpacing:"-0.03em"}}>{(user.gmcBalance||0).toLocaleString()}</div>
+                <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(36px,7vw,52px)",fontWeight:900,color:"#e8a020",lineHeight:0.9,textShadow:"0 0 30px rgba(232,160,32,0.6)",letterSpacing:"-0.03em"}}>{(user.gmcBalance||0).toLocaleString()}</div>
                 <div style={{fontSize:9,letterSpacing:3,color:th.dim,textTransform:"uppercase",marginTop:4}}>GMC · Glasscorp Credits</div>
               </div>
             </div>
@@ -2511,7 +1715,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
           {/* Stats row */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2,marginBottom:20}}>
             {[
-              ["Total Spent",(user.totalSpent||0).toLocaleString()+" GMC","#c8922a"],
+              ["Total Spent",(user.totalSpent||0).toLocaleString()+" GMC","#e8a020"],
               ["Member Since",joinDate,th.a1],
               ["Status","Active","#00ff88"],
             ].map(([l,v,c])=>(
@@ -2550,7 +1754,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
                     <div style={{fontSize:9,color:th.dim,marginTop:2,maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.deliveryAddress}</div>
                   )}
                   {!editingDelivery&&!user.deliveryAddress&&(
-                    <div style={{fontSize:9,color:"#c8922a",marginTop:2}}>Tap to set up your portal</div>
+                    <div style={{fontSize:9,color:"#e8a020",marginTop:2}}>Tap to set up your portal</div>
                   )}
                 </div>
               </div>
@@ -2647,7 +1851,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
                   <div style={{fontSize:8,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginBottom:5}}>Preferred Time</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                     {[
-                      {id:"sunrise",label:"Sunrise",sub:"8am · 6pm",icon:"🌅",bg:"linear-gradient(135deg,rgba(255,160,30,0.12),rgba(255,100,0,0.06))",activeBg:"linear-gradient(135deg,rgba(255,160,30,0.25),rgba(255,100,0,0.15))",color:"#c8922a",glow:"rgba(200,146,42,0.4)"},
+                      {id:"sunrise",label:"Sunrise",sub:"8am · 6pm",icon:"🌅",bg:"linear-gradient(135deg,rgba(255,160,30,0.12),rgba(255,100,0,0.06))",activeBg:"linear-gradient(135deg,rgba(255,160,30,0.25),rgba(255,100,0,0.15))",color:"#e8a020",glow:"rgba(232,160,32,0.4)"},
                       {id:"sunset",label:"Sunset",sub:"6pm · 4am",icon:"🌙",bg:"linear-gradient(135deg,rgba(123,47,255,0.12),rgba(0,212,255,0.06))",activeBg:"linear-gradient(135deg,rgba(123,47,255,0.25),rgba(0,212,255,0.15))",color:"#7b2fff",glow:"rgba(123,47,255,0.4)"},
                     ].map(slot=>{
                       const times=deliveryTime?deliveryTime.split(","):[];
@@ -2692,7 +1896,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
           <div style={{display:"grid",gridTemplateColumns:user.name.toLowerCase()==="jimsnows"?"1fr 1fr":"1fr",gap:6}}>
             {user.name.toLowerCase()==="jimsnows"&&(
               <button onClick={onShowPin}
-                style={{padding:"13px",background:"rgba(232,160,32,0.1)",border:"1px solid rgba(232,160,32,0.35)",color:"#c8922a",cursor:"pointer",fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s"}}
+                style={{padding:"13px",background:"rgba(232,160,32,0.1)",border:"1px solid rgba(232,160,32,0.35)",color:"#e8a020",cursor:"pointer",fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(232,160,32,0.2)";e.currentTarget.style.boxShadow="0 0 14px rgba(232,160,32,0.3)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(232,160,32,0.1)";e.currentTarget.style.boxShadow="none";}}>
                 🔐 Control Room
@@ -2702,7 +1906,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
               style={{padding:"13px",background:"transparent",border:`1px solid ${th.border}`,color:th.dim,cursor:"pointer",fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Inter',sans-serif",transition:"all 0.2s"}}
               onMouseEnter={e=>{e.currentTarget.style.borderColor="#e85020";e.currentTarget.style.color="#e85020";}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor=th.border;e.currentTarget.style.color=th.dim;}}>
-              Leave Arena
+              Leave Guild
             </button>
           </div>
         </div>
@@ -2711,7 +1915,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
         {(()=>{
           const myOrders=(orders||[]).filter(o=>o.memberId===user.id&&o.status!=="delivered").slice(0,5);
           if(myOrders.length===0) return null;
-          const ORDER_STATUS_MAP={new:{label:"Order Placed",color:"#00d4ff",icon:"🔔"},confirmed:{label:"Confirmed",color:"#7b2fff",icon:"✓"},on_the_way:{label:"On The Way",color:"#c8922a",icon:"🛵"},delivered:{label:"Delivered",color:"#00ff88",icon:"✅"}};
+          const ORDER_STATUS_MAP={new:{label:"Order Placed",color:"#00d4ff",icon:"🔔"},confirmed:{label:"Confirmed",color:"#7b2fff",icon:"✓"},on_the_way:{label:"On The Way",color:"#e8a020",icon:"🛵"},delivered:{label:"Delivered",color:"#00ff88",icon:"✅"}};
           return(
             <div style={{background:th.bgCard,border:`1px solid ${th.a1}30`,padding:"20px 24px",marginBottom:3}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -2772,7 +1976,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
                         <div style={{textAlign:"right",flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
                           <div>
                             {bits>0&&<div style={{fontSize:10,color:th.dim,marginBottom:2}}>{bits} bits</div>}
-                            <div style={{fontSize:11,fontWeight:700,color:"#c8922a"}}>{Math.abs(tx.amount).toLocaleString()} GMC</div>
+                            <div style={{fontSize:11,fontWeight:700,color:"#e8a020"}}>{Math.abs(tx.amount).toLocaleString()} GMC</div>
                           </div>
                           {matchedStrain&&matchedStrain.stock>0&&onAddToCart&&(
                             <button
@@ -2795,7 +1999,7 @@ function ProfilePage({t,user,onLogin,onSkip,onLogout,onShowPin,onShelf,onRedeem,
 
         {/* ── RANK LADDER ── */}
         <div style={{background:th.bgCard,border:`1px solid ${th.border}`,padding:"20px 24px"}}>
-          <div style={{fontSize:8,letterSpacing:3,color:th.a2,textTransform:"uppercase",marginBottom:14}}>Arena Ranks</div>
+          <div style={{fontSize:8,letterSpacing:3,color:th.a2,textTransform:"uppercase",marginBottom:14}}>Guild Ranks</div>
           <div style={{display:"flex",flexDirection:"column",gap:2}}>
             {RANKS.map(r=>{
               const isCurrentRank=rank.name===r.name;
@@ -3070,7 +2274,7 @@ function GMCOperationsPanel({members,transactions,onUpdateBalance,theme}){
                   </button>
                 </div>
                 <div style={{marginTop:8,fontSize:9,color:th.dim,textAlign:"center",letterSpacing:1}}>
-                  After: <span style={{color:th.amber,fontWeight:700}}>{((selectedMember.gmcBalance||0)+gmcAmt).toLocaleString()}</span> GMC (add) · <span style={{color:Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt)===0?"#e85020":"#c8922a",fontWeight:700}}>{Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt).toLocaleString()}</span> GMC (deduct)
+                  After: <span style={{color:th.amber,fontWeight:700}}>{((selectedMember.gmcBalance||0)+gmcAmt).toLocaleString()}</span> GMC (add) · <span style={{color:Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt)===0?"#e85020":"#e8a020",fontWeight:700}}>{Math.max(0,(selectedMember.gmcBalance||0)-gmcAmt).toLocaleString()}</span> GMC (deduct)
                 </div>
               </div>
 
@@ -3141,7 +2345,7 @@ function GMCOperationsPanel({members,transactions,onUpdateBalance,theme}){
 const ORDER_STATUSES=[
   {id:"new",label:"New",color:"#00d4ff",icon:"🔔"},
   {id:"confirmed",label:"Confirmed",color:"#7b2fff",icon:"✓"},
-  {id:"on_the_way",label:"On The Way",color:"#c8922a",icon:"🛵"},
+  {id:"on_the_way",label:"On The Way",color:"#e8a020",icon:"🛵"},
   {id:"delivered",label:"Delivered",color:"#00ff88",icon:"✅"},
 ];
 
@@ -3186,7 +2390,7 @@ function OrdersPanel({orders=[],members=[],onUpdateStatus,theme}){
           ["Total Orders",orders.length,th.a1,"📦"],
           ["New",newCount,newCount>0?"#00d4ff":th.dim,"🔔"],
           ["Today",todayCount,th.a2,"📅"],
-          ["Revenue",totalRevenue.toLocaleString()+" GMC","#c8922a","💎"],
+          ["Revenue",totalRevenue.toLocaleString()+" GMC","#e8a020","💎"],
         ].map(([l,v,c,ic])=>(
           <div key={l} style={{background:th.bgCard,border:`1px solid ${c}20`,padding:"14px",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",bottom:-4,right:2,fontSize:24,opacity:0.07}}>{ic}</div>
@@ -3231,7 +2435,7 @@ function OrdersPanel({orders=[],members=[],onUpdateStatus,theme}){
                     <div style={{fontSize:9,color:th.dim,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.items.map(i=>`${i.strainName} ×${i.qty}`).join(", ")}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div style={{fontSize:9,color:th.dim,letterSpacing:0.5}}>{fmt(o.createdAt)}</div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#c8922a"}}>{o.totalGMC.toLocaleString()} GMC</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#e8a020"}}>{o.totalGMC.toLocaleString()} GMC</div>
                     </div>
                   </div>
                 );
@@ -3314,12 +2518,12 @@ function OrdersPanel({orders=[],members=[],onUpdateStatus,theme}){
                           <div style={{fontSize:11,fontWeight:700,color:th.text,textTransform:"uppercase"}}>{item.strainName}</div>
                           <div style={{fontSize:9,color:th.dim,marginTop:2}}>{item.qty} bits</div>
                         </div>
-                        <div style={{fontSize:12,fontWeight:700,color:"#c8922a"}}>{item.totalGMC.toLocaleString()} GMC</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#e8a020"}}>{item.totalGMC.toLocaleString()} GMC</div>
                       </div>
                     ))}
                     <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:8}}>
                       <span style={{fontSize:10,color:th.dim,textTransform:"uppercase",letterSpacing:1}}>Total · {selectedOrder.paidWith==="gmc"?"GMC Balance":"WhatsApp"}</span>
-                      <span style={{fontSize:14,fontWeight:900,color:"#c8922a"}}>{selectedOrder.totalGMC.toLocaleString()} GMC</span>
+                      <span style={{fontSize:14,fontWeight:900,color:"#e8a020"}}>{selectedOrder.totalGMC.toLocaleString()} GMC</span>
                     </div>
                   </div>
 
@@ -3689,15 +2893,13 @@ function StrainEditor({strain,onSave,onCancel,isNew}){
 
               {/* Hidden file input */}
               <input id="mediaFileInput" type="file" accept="image/*,.gif" style={{display:"none"}}
-                onChange={async e=>{
+                onChange={e=>{
                   const file=e.target.files?.[0];
                   if(!file) return;
-                  if(file.size>20*1024*1024){alert("File too large. Max 20MB.");return;}
-                  F("mediaUploading",true);
-                  const url=await sbUploadImage(file);
-                  F("mediaUploading",false);
-                  if(url) F("media",url);
-                  else alert("Upload failed. Check your connection.");
+                  if(file.size>15*1024*1024){alert("File too large. Max 15MB.");return;}
+                  const reader=new FileReader();
+                  reader.onload=ev=>F("media",ev.target?.result as string||"");
+                  reader.readAsDataURL(file);
                   e.target.value="";
                 }}/>
 
@@ -3709,14 +2911,9 @@ function StrainEditor({strain,onSave,onCancel,isNew}){
                 {form.media&&<button onClick={()=>F("media","")} style={{padding:"9px 12px",background:"rgba(232,80,32,0.1)",border:"1px solid rgba(232,80,32,0.3)",color:"#e85020",cursor:"pointer",fontSize:9,letterSpacing:1,textTransform:"uppercase",fontFamily:"'Inter',sans-serif"}}>Clear</button>}
               </div>
 
-              {form.mediaUploading&&(
-                <div style={{fontSize:9,color:th.a1,marginTop:5,letterSpacing:1,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Uploading to Supabase...
-                </div>
-              )}
-              {form.media&&form.media.startsWith("https://febslpxjssjijooiukot")&&(
-                <div style={{fontSize:9,color:"#00ff88",marginTop:5,letterSpacing:1}}>
-                  ✓ Saved to Supabase Storage — visible everywhere
+              {form.media&&form.media.startsWith("data:")&&(
+                <div style={{fontSize:9,color:th.dim,marginTop:5,letterSpacing:1}}>
+                  📎 File loaded · {Math.round(form.media.length*0.75/1024)}KB · Session only until Supabase connected
                 </div>
               )}
               {/* Photo 2 + 3 */}
@@ -3729,12 +2926,13 @@ function StrainEditor({strain,onSave,onCancel,isNew}){
                       {form[key]?<img src={form[key]} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:16,opacity:0.3}}>+</span>}
                     </div>
                     <input id={"mediaInput_"+key} type="file" accept="image/*,.gif" style={{display:"none"}}
-                      onChange={async e=>{
+                      onChange={e=>{
                         const file=e.target.files?.[0];
                         if(!file) return;
-                        if(file.size>20*1024*1024){return;}
-                        const url=await sbUploadImage(file);
-                        if(url) F(key,url);
+                        if(file.size>15*1024*1024){return;}
+                        const reader=new FileReader();
+                        reader.onload=ev=>F(key,ev.target?.result||"");
+                        reader.readAsDataURL(file);
                         e.target.value="";
                       }}/>
                     <input placeholder="Or paste URL..." value={form[key]&&form[key].startsWith("http")?form[key]:""} onChange={e=>F(key,e.target.value)}
@@ -3791,43 +2989,27 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
 
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(""),2500);}
 
-  async function saveStrain(form){
+  function saveStrain(form){
     if(editing==="new"){
-      const dbRow=strainToDb(form);
-      const saved=await sbInsert("strains",dbRow);
-      if(saved){
-        const newS=dbToStrain(saved);
-        setStrains(ss=>[...ss,newS]);
-        showToast(`✓ "${form.name}" added to The Vault`);
-      } else {
-        showToast(`⚠ Save failed — check connection`);
-      }
+      const newS={...form,id:Date.now()};
+      setStrains(ss=>[...ss,newS]);
+      showToast(`✓ "${form.name}" added to The Shelf`);
     } else {
-      const dbRow=strainToDb(form);
-      await sbUpdate("strains",{id:form.id},dbRow);
-      // Re-fetch from Supabase so image_url → media mapping is correct everywhere
-      const rows=await sbGet("strains",`id=eq.${form.id}`);
-      const updated=rows&&rows.length>0?dbToStrain(rows[0]):form;
-      setStrains(ss=>ss.map(s=>s.id===form.id?updated:s));
+      setStrains(ss=>ss.map(s=>s.id===form.id?form:s));
       showToast(`✓ "${form.name}" updated`);
     }
     setEditing(null);
   }
 
-  async function deleteStrain(id){
+  function deleteStrain(id){
     const s=strains.find(x=>x.id===id);
-    await sbDelete("strains",{id});
     setStrains(ss=>ss.filter(x=>x.id!==id));
     setDeleteConfirm(null);
     showToast(`🗑 "${s?.name}" removed from shelf`);
   }
 
-  async function adjustStock(id,delta){
-    const s=strains.find(x=>x.id===id);
-    if(!s) return;
-    const newStock=Math.max(0,s.stock+delta);
-    setStrains(ss=>ss.map(x=>x.id===id?{...x,stock:newStock}:x));
-    await sbUpdate("strains",{id},{stock:newStock});
+  function adjustStock(id,delta){
+    setStrains(ss=>ss.map(s=>s.id===id?{...s,stock:Math.max(0,s.stock+delta)}:s));
   }
 
   function doAddGMC(){
@@ -3910,7 +3092,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
               <div>
                 <div style={{fontSize:9,letterSpacing:4,color:th.dim,textTransform:"uppercase",marginBottom:4}}>Strain Management · {strains.length} strains</div>
                 <div style={{display:"flex",gap:12,alignItems:"center"}}>
-                  {lowStock.length>0&&<span style={{fontSize:9,color:"#c8922a",letterSpacing:1}}>⚠️ {lowStock.length} low stock</span>}
+                  {lowStock.length>0&&<span style={{fontSize:9,color:"#e8a020",letterSpacing:1}}>⚠️ {lowStock.length} low stock</span>}
                   {outOfStock.length>0&&<span style={{fontSize:9,color:"#e85020",letterSpacing:1}}>🔴 {outOfStock.length} out of stock</span>}
                 </div>
               </div>
@@ -3922,7 +3104,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
               {strains.map(s=>{
                 const sth=getTheme(s.type);
                 const ts=TIER_S[s.tier]||TIER_S["TOP"];
-                const stockColor=s.stock===0?"#e85020":s.stock<=5?"#c8922a":"#00ff88";
+                const stockColor=s.stock===0?"#e85020":s.stock<=5?"#e8a020":"#00ff88";
                 const isSat=s.type==="Sativa"||s.sativaRatio>=70;
                 const isInd=s.type==="Indica"||s.sativaRatio<=30;
                 return(
@@ -4108,7 +3290,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:3,marginBottom:3}}>
                     {[
-                      ["Total Revenue",totalRevenue.toLocaleString()+" GMC","#c8922a","💰"],
+                      ["Total Revenue",totalRevenue.toLocaleString()+" GMC","#e8a020","💰"],
                       ["This Week",weekTxs.length+" claims","#00ff88","📈"],
                       ["Avg Order",avgOrder.toLocaleString()+" GMC",th.a1,"◈"],
                       ["Active Members",activeMems+"/"+members.length,th.a2,"◉"],
@@ -4157,7 +3339,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
                 ["Total Strains",strains.length,th.a1,"💊"],
                 ["Total Stock",totalStock+"g",th.a2,"📦"],
                 ["Exotic Drops",strains.filter(s=>s.tier==="EXOTIC").length,th.amber,"💎"],
-                ["Low Stock",lowStock.length,lowStock.length>0?"#c8922a":th.dim,"⚠️"],
+                ["Low Stock",lowStock.length,lowStock.length>0?"#e8a020":th.dim,"⚠️"],
                 ["Out of Stock",outOfStock.length,outOfStock.length>0?"#e85020":th.dim,"🔴"],
                 ["Avg GMC/g",strains.length?(strains.reduce((a,s)=>a+s.gmcCost,0)/strains.length).toFixed(0):"—",th.a1,"💰"],
               ].map(([label,val,color,ic])=>(
@@ -4180,9 +3362,9 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
                     </div>
                   ))}
                   {lowStock.map(s=>(
-                    <div key={s.id} style={{background:"rgba(232,160,32,0.12)",border:"1px solid rgba(232,160,32,0.35)",padding:"6px 12px",fontSize:11,color:"#c8922a",display:"flex",gap:8,alignItems:"center"}}>
+                    <div key={s.id} style={{background:"rgba(232,160,32,0.12)",border:"1px solid rgba(232,160,32,0.35)",padding:"6px 12px",fontSize:11,color:"#e8a020",display:"flex",gap:8,alignItems:"center"}}>
                       ⚠️ {s.name} — {s.stock}g left
-                      <button onClick={()=>setEditing({...s})} style={{background:"transparent",border:"none",color:"#c8922a",cursor:"pointer",fontSize:9,letterSpacing:1,textDecoration:"underline",fontFamily:"'Inter',sans-serif",padding:0}}>Restock</button>
+                      <button onClick={()=>setEditing({...s})} style={{background:"transparent",border:"none",color:"#e8a020",cursor:"pointer",fontSize:9,letterSpacing:1,textDecoration:"underline",fontFamily:"'Inter',sans-serif",padding:0}}>Restock</button>
                     </div>
                   ))}
                 </div>
@@ -4214,7 +3396,7 @@ function AdminPanel({t,user,strains,setStrains,members=[],transactions=[],onUpda
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {[...strains].sort((a,b)=>b.stock-a.stock).map(s=>{
                   const pct=totalStock>0?(s.stock/Math.max(...strains.map(x=>x.stock)))*100:0;
-                  const sc=s.stock===0?"#e85020":s.stock<=5?"#c8922a":"#00ff88";
+                  const sc=s.stock===0?"#e85020":s.stock<=5?"#e8a020":"#00ff88";
                   return(
                     <div key={s.id} style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{flex:"0 0 150px",fontSize:10,color:th.text,textTransform:"uppercase",letterSpacing:"-0.01em",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
@@ -4507,7 +3689,7 @@ function CartPanel({cart,strains,user,onClose,onUpdateQty,onRemove,onSpendGMC,on
                           {/* Price */}
                           <div style={{textAlign:"right"}}>
                             {saving>0&&<div style={{fontSize:9,color:th.dim,textDecoration:"line-through"}}>{base.toLocaleString()}</div>}
-                            <div style={{fontSize:13,fontWeight:900,color:"#c8922a"}}>{total.toLocaleString()} GMC</div>
+                            <div style={{fontSize:13,fontWeight:900,color:"#e8a020"}}>{total.toLocaleString()} GMC</div>
                           </div>
                         </div>
                       </div>
@@ -4544,8 +3726,8 @@ function CartPanel({cart,strains,user,onClose,onUpdateQty,onRemove,onSpendGMC,on
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <span style={{fontSize:11,color:th.dim,letterSpacing:2,textTransform:"uppercase"}}>Total</span>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <GMCCoin size={18} theme={{amber:"#c8922a"}}/>
-                <span style={{fontSize:22,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif"}}>{totalGMC.toLocaleString()}</span>
+                <GMCCoin size={18} theme={{amber:"#e8a020"}}/>
+                <span style={{fontSize:22,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif"}}>{totalGMC.toLocaleString()}</span>
               </div>
             </div>
             {/* Balance check */}
@@ -4890,12 +4072,12 @@ function StrainQuickAdd({strain,onClose,onConfirm,calcDiscount,calcCartItem,disc
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,color:th.text,letterSpacing:2,textTransform:"uppercase",fontWeight:700}}>Total</span>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <GMCCoin size={20} theme={{amber:"#c8922a"}}/>
+                <GMCCoin size={20} theme={{amber:"#e8a020"}}/>
                 <span style={{
                   fontFamily:"'Inter',sans-serif",
                   fontSize:28,fontWeight:900,
-                  color:"#c8922a",
-                  textShadow:"0 0 20px rgba(200,146,42,0.6)",
+                  color:"#e8a020",
+                  textShadow:"0 0 20px rgba(232,160,32,0.6)",
                   animation:"popIn 0.2s ease-out"
                 }}>{total.toLocaleString()}</span>
               </div>
@@ -5139,7 +4321,7 @@ YOUR JOB:
             </div>
             <div style={{textAlign:"right"}}>
               <div style={{fontSize:7,color:"rgba(255,255,255,0.35)",letterSpacing:1,textTransform:"uppercase"}}>GMC</div>
-              <div style={{fontSize:13,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif"}}>{strain.gmcCost}</div>
+              <div style={{fontSize:13,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif"}}>{strain.gmcCost}</div>
             </div>
           </div>
           <div style={{fontSize:8,color:"rgba(255,255,255,0.25)",letterSpacing:1,marginBottom:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{strain.effects.slice(0,2).join(" · ")}</div>
@@ -5197,7 +4379,7 @@ YOUR JOB:
             <path d="M12.2 6.2 11 5"/>
           </svg>
           {msgs.length===0&&(
-            <div style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#c8922a",boxShadow:"0 0 6px #e8a020"}}/>
+            <div style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#e8a020",boxShadow:"0 0 6px #e8a020"}}/>
           )}
           {minimized&&msgs.length>0&&(
             <div style={{position:"absolute",top:-4,right:-4,minWidth:16,height:16,borderRadius:8,background:"#e85020",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:700,fontFamily:"'Inter',sans-serif",padding:"0 3px"}}>
@@ -5562,7 +4744,7 @@ function ConfirmModal({items,total,user,onConfirm,onCancel}){
                   <div style={{fontSize:11,color:T.base.text,fontWeight:700}}>{item.name}</div>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <span style={{fontSize:10,color:T.base.dim}}>{item.qty} bits</span>
-                    <span style={{fontSize:11,fontWeight:700,color:"#c8922a"}}>{item.total.toLocaleString()} GMC</span>
+                    <span style={{fontSize:11,fontWeight:700,color:"#e8a020"}}>{item.total.toLocaleString()} GMC</span>
                   </div>
                 </div>
               ))}
@@ -5570,8 +4752,8 @@ function ConfirmModal({items,total,user,onConfirm,onCancel}){
             <div style={{borderTop:`1px solid ${T.base.border}`,marginTop:10,paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:10,color:T.base.dim,letterSpacing:1,textTransform:"uppercase"}}>Total</span>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <GMCCoin size={16} theme={{amber:"#c8922a"}}/>
-                <span style={{fontSize:18,fontWeight:900,color:"#c8922a",fontFamily:"'Inter',sans-serif"}}>{total.toLocaleString()}</span>
+                <GMCCoin size={16} theme={{amber:"#e8a020"}}/>
+                <span style={{fontSize:18,fontWeight:900,color:"#e8a020",fontFamily:"'Inter',sans-serif"}}>{total.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -5729,7 +4911,7 @@ function genOrderId(){return"GC-"+Date.now().toString(36).toUpperCase();}
 export default function App(){
   const [lang,setLang]=useState("en");
   const t=L[lang];
-  const [ageOk,setAgeOk]=useState(()=>localStorage.getItem("glasscorp_age_ok")==="1");
+  const [ageOk,setAgeOk]=useState(false);
   const [user,setUser]=useState(null);
   const [tab,setTab]=useState("home");
   const [strain,setStrain]=useState(null);
@@ -5738,7 +4920,6 @@ export default function App(){
   const [pinInput,setPinInput]=useState("");
   const [pinError,setPinError]=useState(false);
   const [liveStrains,setLiveStrains]=useState(STRAINS);
-  const [strainsLoaded,setStrainsLoaded]=useState(false);
   const [contactSettings,setContactSettings]=useState(()=>loadContactSettings());
   const [orders,setOrders]=useState(()=>loadOrders());
   const [staffSettings,setStaffSettings]=useState(()=>loadStaffSettings());
@@ -5763,117 +4944,38 @@ export default function App(){
   });
   const th=T.base;
 
-  // ── SESSION + GOOGLE OAUTH TOKEN DETECTION ──
-  useEffect(()=>{
-    // Check for Google OAuth token in URL hash (after redirect back)
-    const urlToken = sbGetTokenFromUrl();
-    const sessionToken = urlToken || localStorage.getItem("glasscorp_session");
-    if(sessionToken){
-      sbGetSession().then(async session=>{
-        if(!session) return;
-        const authId = session.user?.id;
-        if(!authId) return;
-        const member = await sbGetMemberByAuthId(authId);
-        if(member){
-          setUser(member);
-          setMembers(ms=>{
-            const exists=ms.find(m=>m.id===member.id);
-            if(exists) return ms.map(m=>m.id===member.id?member:m);
-            return [...ms,member];
-          });
-        } else if(urlToken){
-          // New Google user — need personame
-          // Store google user data and force profile tab to show personame picker
-          localStorage.setItem("glasscorp_google_pending", JSON.stringify(session.user));
-          setTab("profile");
-        }
-      }).catch(()=>{});
-    }
-  },[]);
-
-  // ── LOAD FROM SUPABASE ON STARTUP ──
-  useEffect(()=>{
-    // Load strains
-    sbGet("strains","active=eq.true&order=id.asc").then(rows=>{
-      if(rows&&rows.length>0){
-        setLiveStrains(rows.map(dbToStrain));
-        const ids=rows.slice(0,3).map(r=>r.id);
-        setFeaturedIds(f=>f.length>0?f:ids);
-        setStrainsLoaded(true);
-      } else {
-        // Seed default strains into Supabase on first run
-        Promise.all(STRAINS.map(s=>sbInsert("strains",strainToDb(s)))).then(saved=>{
-          const valid=saved.filter(Boolean).map(dbToStrain);
-          if(valid.length>0) setLiveStrains(valid);
-          setStrainsLoaded(true);
-        }).catch(()=>setStrainsLoaded(true));
-      }
-    }).catch(()=>setStrainsLoaded(true));
-
-    // Load members
-    sbGet("members","order=joined_at.desc").then(rows=>{
-      if(rows&&rows.length>0) setMembers(rows.map(dbToMember));
-    }).catch(()=>{});
-
-    // Load orders
-    sbGet("orders","order=created_at.desc&limit=500").then(rows=>{
-      if(rows&&rows.length>0){
-        setOrders(rows.map(r=>({
-          id:r.id, memberId:r.member_id, memberName:r.member_name,
-          memberContact:r.member_contact, items:r.items||[],
-          totalGMC:r.total_gmc, paidWith:r.paid_with,
-          deliveryAddress:r.delivery_address, mapsLink:r.maps_link,
-          riderPhone:r.rider_phone, countryCode:r.country_code,
-          deliveryTime:r.delivery_time, status:r.status||"new",
-          statusHistory:r.status_history||[], createdAt:r.created_at,
-          updatedAt:r.updated_at,
-        })));
-      }
-    }).catch(()=>{});
-
-    // Load transactions
-    sbGet("transactions","order=at.desc&limit=500").then(rows=>{
-      if(rows&&rows.length>0){
-        setTransactions(rows.map(r=>({id:r.id,memberId:r.member_id,note:r.note,amount:r.amount,at:r.at})));
-      }
-    }).catch(()=>{});
-  },[]);
-
-  // sync to localStorage as backup
+  // sync members to localStorage whenever they change
   useEffect(()=>{ saveRegistry(members); },[members]);
   useEffect(()=>{ saveFeatured(featuredIds); },[featuredIds]);
   useEffect(()=>{ saveOrders(orders); },[orders]);
   useEffect(()=>{ saveTx(transactions); },[transactions]);
 
-  // onLogin — receives a fully formed member object from auth
-  function registerMember(member){
-    setUser(member);
+  function registerMember(u){
+    const newMember={...u,id:Date.now(),joinedAt:new Date().toISOString(),gmcBalance:0,totalSpent:0,claimHistory:[]};
     setMembers(ms=>{
-      const exists=ms.find(m=>m.id===member.id);
-      if(exists) return ms.map(m=>m.id===member.id?member:m);
-      return [...ms,member];
+      const exists=ms.find(m=>m.name===u.name&&(m.phone===u.phone||m.lineId===u.lineId));
+      if(exists){
+        setUser(exists);
+        return ms;
+      }
+      const updated=[...ms,newMember];
+      setUser(newMember);
+      return updated;
     });
-    setTab("home");
-    window.scrollTo(0,0);
   }
 
   function updateMemberBalance(memberId,gmcDelta,txNote){
     setMembers(ms=>ms.map(m=>{
       if(m.id!==memberId) return m;
-      const newBal=Math.max(0,(m.gmcBalance||0)+gmcDelta);
-      const newSpent=gmcDelta<0?(m.totalSpent||0)+Math.abs(gmcDelta):m.totalSpent;
-      // Sync to Supabase
-      sbUpdate("members",{id:memberId},{gmc_balance:newBal,total_spent:newSpent}).catch(()=>{});
-      return {...m,gmcBalance:newBal,totalSpent:newSpent};
+      return {...m,gmcBalance:Math.max(0,(m.gmcBalance||0)+gmcDelta),totalSpent:gmcDelta<0?(m.totalSpent||0)+Math.abs(gmcDelta):m.totalSpent};
     }));
+    // also update active session user if it's the same person
     setUser(u=>{
       if(!u||u.id!==memberId) return u;
       return {...u,gmcBalance:Math.max(0,(u.gmcBalance||0)+gmcDelta),totalSpent:gmcDelta<0?(u.totalSpent||0)+Math.abs(gmcDelta):u.totalSpent};
     });
     const tx={id:Date.now(),memberId,note:txNote,amount:gmcDelta,at:new Date().toISOString()};
     setTransactions(txs=>[tx,...txs].slice(0,500));
-    // Save transaction to Supabase
-    sbInsert("transactions",{id:tx.id,member_id:memberId,note:txNote,amount:gmcDelta,at:tx.at}).catch(()=>{});
   }
 
   // ── DISCOUNT CALC ── per strain, per qty
@@ -5957,17 +5059,6 @@ export default function App(){
     };
     setOrders(os=>[order,...os]);
     sendTelegramOrder(order,staffSettings);
-    // Save order to Supabase
-    sbInsert("orders",{
-      id:order.id, member_id:order.memberId, member_name:order.memberName,
-      member_contact:order.memberContact, items:order.items,
-      total_gmc:order.totalGMC, paid_with:order.paidWith,
-      delivery_address:order.deliveryAddress, maps_link:order.mapsLink,
-      rider_phone:order.riderPhone, country_code:order.countryCode,
-      delivery_time:order.deliveryTime, status:order.status,
-      status_history:order.statusHistory,
-      created_at:order.createdAt, updated_at:order.updatedAt
-    }).catch(()=>{});
     clearCart();
     setConfirmModal(null);
     setClaimDone(true);
@@ -6029,17 +5120,6 @@ export default function App(){
     };
     setOrders(os=>[order,...os]);
     sendTelegramOrder(order,staffSettings);
-    // Save order to Supabase
-    sbInsert("orders",{
-      id:order.id, member_id:order.memberId, member_name:order.memberName,
-      member_contact:order.memberContact, items:order.items,
-      total_gmc:order.totalGMC, paid_with:order.paidWith,
-      delivery_address:order.deliveryAddress, maps_link:order.mapsLink,
-      rider_phone:order.riderPhone, country_code:order.countryCode,
-      delivery_time:order.deliveryTime, status:order.status,
-      status_history:order.statusHistory,
-      created_at:order.createdAt, updated_at:order.updatedAt
-    }).catch(()=>{});
     setConfirmModal(null);
     setClaimDone(true);
     setTimeout(()=>{setClaimDone(false);setStrain(null);setTab("shelf");},3000);
@@ -6060,43 +5140,15 @@ export default function App(){
     setOrders(os=>os.map(o=>{
       if(o.id!==orderId) return o;
       const history=[...(o.statusHistory||[]),{status:newStatus,at:new Date().toISOString(),note:`Status updated to ${newStatus.replace("_"," ")}`}];
-      const updated={...o,status:newStatus,statusHistory:history,updatedAt:new Date().toISOString()};
-      // Sync to Supabase
-      sbUpdate("orders",{id:orderId},{status:newStatus,status_history:history,updated_at:updated.updatedAt}).catch(()=>{});
-      return updated;
+      return{...o,status:newStatus,statusHistory:history,updatedAt:new Date().toISOString()};
     }));
   }
 
   if(!ageOk) return(
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&family=Bebas+Neue&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}}@keyframes azron-breathe{0%,100%{opacity:0.13;transform:translateY(0px)}50%{opacity:0.18;transform:translateY(-8px)}}@keyframes azron-breathe-mobile{0%,100%{opacity:0.08;transform:translateY(0px)}50%{opacity:0.12;transform:translateY(-6px)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');*{margin:0;padding:0;box-sizing:border-box;}body{background:#080612;font-family:'Inter',sans-serif;}`}</style>
       <GlobalParticles/>
-      <div style={{position:"fixed",inset:0,background:th.bgDeep,zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,overflow:"hidden"}}>
-        {/* AZRON — age gate guardian, desktop right / mobile behind */}
-        <img src={CHARS.AZRON} alt="" aria-hidden="true" style={{
-          position:"absolute",
-          right:"-5%",bottom:"-5%",
-          height:"90vh",width:"auto",
-          objectFit:"contain",objectPosition:"bottom right",
-          opacity:0.15,
-          animation:"azron-breathe 6s ease-in-out infinite",
-          pointerEvents:"none",
-          userSelect:"none",
-          filter:"drop-shadow(0 0 40px rgba(255,215,0,0.15))",
-        }}/>
-        {/* Mobile AZRON — centered behind content */}
-        <style>{`@media(max-width:640px){.azron-age{right:unset!important;left:50%!important;transform:translateX(-50%)!important;height:70vh!important;opacity:0.08!important;animation:azron-breathe-mobile 6s ease-in-out infinite!important;}}`}</style>
-        <img src={CHARS.AZRON} alt="" aria-hidden="true" className="azron-age" style={{
-          position:"absolute",
-          right:"-5%",bottom:"-5%",
-          height:"90vh",width:"auto",
-          objectFit:"contain",objectPosition:"bottom right",
-          opacity:0.15,
-          animation:"azron-breathe 6s ease-in-out infinite",
-          pointerEvents:"none",
-          userSelect:"none",
-          display:"none",
-        }}/>
+      <div style={{position:"fixed",inset:0,background:th.bgDeep,zIndex:999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32}}>
         <div style={{position:"relative",zIndex:1,textAlign:"center",maxWidth:400}}>
           <div style={{fontFamily:"'Inter',sans-serif",fontSize:"clamp(44px,10vw,72px)",fontWeight:900,color:th.a1,letterSpacing:"-0.02em",textTransform:"uppercase",textShadow:`0 0 30px ${th.a1},0 0 60px ${th.a1}40`,marginBottom:6}}>GLASSCORP</div>
           <div style={{fontSize:9,letterSpacing:5,color:th.a2,textTransform:"uppercase",marginBottom:44,textShadow:`0 0 10px ${th.a2}`}}>Member Collective</div>
@@ -6104,7 +5156,7 @@ export default function App(){
             <div style={{fontSize:44,marginBottom:12}}>⚠️</div>
             <div style={{fontFamily:"'Inter',sans-serif",fontSize:20,fontWeight:900,color:th.text,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Adults Only</div>
             <p style={{fontSize:13,color:th.dim,lineHeight:1.7,marginBottom:28}}>You must be <strong style={{color:th.amber}}>21 years or older</strong> to access this platform.</p>
-            <GBtn onClick={()=>{setAgeOk(true);localStorage.setItem("glasscorp_age_ok","1");}} color={th.a1} style={{width:"100%"}}>✓ I am 21+ — Enter The Vault</GBtn>
+            <GBtn onClick={()=>setAgeOk(true)} color={th.a1} style={{width:"100%"}}>✓ I am 21+ — Enter The Vault</GBtn>
             <div style={{fontSize:9,letterSpacing:2,color:th.dim,textTransform:"uppercase",marginTop:14}}>🇹🇭 Legal Platform · Members Only</div>
           </div>
         </div>
@@ -6234,38 +5286,23 @@ export default function App(){
         </div>
       </nav>
 
-      <div style={{paddingTop:62,paddingBottom:"calc(72px + env(safe-area-inset-bottom,0px))"}}>
-
+      <div style={{paddingTop:62}}>
         {tab==="home"&&!strain&&!advisorStrain&&<HomePage t={t} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} strains={liveStrains} featuredIds={featuredIds} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {tab==="shelf"&&!strain&&!advisorStrain&&<TheShelf t={t} user={user} strains={liveStrains} cart={cart} onAddToCart={addToCart} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onView={s=>{setStrain(s);window.scrollTo(0,0);}}/>}
         {(strain||advisorStrain)&&<StrainDetail strain={strain||advisorStrain} t={t} user={user} onBack={()=>{setStrain(null);setAdvisorStrain(null);setTab("shelf");window.scrollTo(0,0);}} onClaim={handleClaim} onLogin={()=>{setStrain(null);setAdvisorStrain(null);setTab("profile");window.scrollTo(0,0);}} calcDiscount={calcDiscount} calcCartItem={calcCartItem} discountSettings={discountSettings} onAddToCart={addToCart} cart={cart}/>}
-        {tab==="profile"&&!strain&&!advisorStrain&&<ProfilePage t={t} user={user} onLogin={registerMember} onSkip={()=>setTab("home")} onLogout={()=>{ const tok=localStorage.getItem("glasscorp_session"); if(tok) sbSignOut(tok).catch(()=>{}); localStorage.removeItem("glasscorp_session"); localStorage.removeItem("glasscorp_google_pending"); setUser(null); setTab("home"); }} onShowPin={()=>setShowPin(true)} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} onUpdateProfile={(updated)=>{
-  setUser(updated);
-  setMembers(ms=>ms.map(m=>m.id===updated.id?updated:m));
-  // Sync delivery info to Supabase
-  sbUpdate("members",{id:updated.id},{
-    delivery_address:updated.deliveryAddress||"",
-    maps_link:updated.mapsLink||"",
-    rider_phone:updated.riderPhone||"",
-    country_code:updated.countryCode||"+66"
-  }).catch(()=>{});
-}} transactions={transactions} onAddToCart={addToCart} strains={liveStrains} onOpenCart={()=>setCartOpen(true)} orders={orders}/>}
+        {tab==="profile"&&!strain&&!advisorStrain&&<ProfilePage t={t} user={user} onLogin={registerMember} onSkip={()=>setTab("home")} onLogout={()=>{setUser(null);setTab("home");}} onShowPin={()=>setShowPin(true)} onShelf={()=>{setTab("shelf");window.scrollTo(0,0);}} onRedeem={()=>openWA("Hi Glasscorp! I would like to redeem GMC.")} onUpdateProfile={(updated)=>{setUser(updated);setMembers(ms=>ms.map(m=>m.id===updated.id?updated:m));}} transactions={transactions} onAddToCart={addToCart} strains={liveStrains} onOpenCart={()=>setCartOpen(true)} orders={orders}/>}
         {tab==="admin"&&!strain&&!advisorStrain&&<AdminPanel t={t} user={user} strains={liveStrains} setStrains={setLiveStrains} members={members} transactions={transactions} onUpdateBalance={updateMemberBalance} discountSettings={discountSettings} setDiscountSettings={setDiscountSettings} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} onExit={()=>setTab("home")} onAddGMC={(amt)=>{ if(user) updateMemberBalance(user.id,amt,"Manual GMC top-up"); }} contactSettings={contactSettings} onSaveContact={(s)=>{setContactSettings(s);saveContactSettings(s);}} staffSettings={staffSettings} onSaveStaff={(s)=>{setStaffSettings(s);saveStaffSettings(s);}} orders={orders} onUpdateOrderStatus={updateOrderStatus} staffMode={staffMode}/>}
       </div>
 
       {/* BOTTOM NAV */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:`${th.bgDeep}f8`,backdropFilter:"blur(20px)",borderTop:`1px solid ${th.border}`,display:"flex",flexDirection:"column",zIndex:100,boxShadow:`0 -4px 30px ${th.a2}08`}}>
-        <div style={{display:"flex",width:"100%"}}>
-          {[["home","⬡","Home"],["shelf","◈",t.shelf],["profile","◉",t.profile]].map(([k,ic,l])=>(
-            <button key={k} onClick={()=>{setTab(k);setStrain(null);window.scrollTo(0,0);}} style={{flex:1,padding:"11px 4px 9px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
-              <span style={{fontSize:16,color:tab===k?th.a1:th.dim,textShadow:tab===k?`0 0 10px ${th.a1}`:"none",transition:"all 0.2s"}}>{ic}</span>
-              <span style={{fontSize:8,fontWeight:700,color:tab===k?th.a1:th.dim,letterSpacing:1,textTransform:"uppercase",textShadow:tab===k?`0 0 8px ${th.a1}`:"none",transition:"all 0.2s"}}>{l}</span>
-              {tab===k&&<div style={{position:"absolute",bottom:0,left:"20%",right:"20%",height:2,background:th.a1,boxShadow:`0 0 8px ${th.a1}`}}/>}
-            </button>
-          ))}
-        </div>
-        {/* iPhone home bar safe area */}
-        <div style={{height:"env(safe-area-inset-bottom,0px)",background:"transparent"}}/>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:`${th.bgDeep}f8`,backdropFilter:"blur(20px)",borderTop:`1px solid ${th.border}`,display:"flex",zIndex:100,boxShadow:`0 -4px 30px ${th.a2}08`}}>
+        {[["home","⬡","Home"],["shelf","◈",t.shelf],["profile","◉",t.profile]].map(([k,ic,l])=>(
+          <button key={k} onClick={()=>{setTab(k);setStrain(null);window.scrollTo(0,0);}} style={{flex:1,padding:"11px 4px 9px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
+            <span style={{fontSize:16,color:tab===k?th.a1:th.dim,textShadow:tab===k?`0 0 10px ${th.a1}`:"none",transition:"all 0.2s"}}>{ic}</span>
+            <span style={{fontSize:8,fontWeight:700,color:tab===k?th.a1:th.dim,letterSpacing:1,textTransform:"uppercase",textShadow:tab===k?`0 0 8px ${th.a1}`:"none",transition:"all 0.2s"}}>{l}</span>
+            {tab===k&&<div style={{position:"absolute",bottom:0,left:"20%",right:"20%",height:2,background:th.a1,boxShadow:`0 0 8px ${th.a1}`}}/>}
+          </button>
+        ))}
       </div>
 
       {/* FLOATING CONTACT + WIZARD */}
