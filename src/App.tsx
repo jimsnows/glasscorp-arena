@@ -1123,7 +1123,7 @@ function HomePage({t,onShelf,onRedeem,strains,featuredIds,cart,onAddToCart,calcD
         {/* ── LAYER 1: AZRON image — full bleed center ── */}
         <div style={{
           position:"absolute",inset:0,
-          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg.png)`,
+          backgroundImage:`url(https://febslpxjssjijooiukot.supabase.co/storage/v1/object/public/characters/azron-home-bg1.png)`,
           backgroundSize:"cover",
           backgroundPosition:"center top",
           backgroundRepeat:"no-repeat",
